@@ -1,0 +1,180 @@
+// This is your Prisma schema file — Maquina Team Gym System
+// Fase 1: schema base. Será expandido na Fase 2 (auth) e Fase 3 (planos/pagamentos).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// USUÁRIOS / AUTH
+// ============================================================
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  role          Role      @default(STUDENT)
+  avatarUrl     String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subscriptions Subscription[]
+  checkIns      CheckIn[]
+  accounts      Account[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+// ============================================================
+// AUTH.JS v5 — tabelas obrigatórias
+// ============================================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================
+// PLANOS / MATRÍCULAS
+// ============================================================
+model Plan {
+  id           String  @id @default(cuid())
+  legacyId     String? @unique // ex: "plan_1" — mapeado do legado
+  name         String
+  period       Period
+  frequency    Frequency
+  priceMonthly Float
+  totalPrice   Float
+  active       Boolean @default(true)
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+enum Period {
+  MONTHLY
+  SEMIANNUAL
+  ANNUAL
+  FULL
+}
+
+enum Frequency {
+  ONCE_A_WEEK     // 1x
+  TWICE_A_WEEK    // 2x
+  THREE_A_WEEK    // 3x
+  UNLIMITED
+}
+
+model Subscription {
+  id          String             @id @default(cuid())
+  userId      String
+  planId      String
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  OVERDUE
+  CANCELLED
+}
+
+// ============================================================
+// PAGAMENTOS
+// ============================================================
+model Payment {
+  id               String        @id @default(cuid())
+  subscriptionId   String
+  amount           Float
+  status           PaymentStatus @default(PENDING)
+  mpPaymentId      String?       @unique
+  mpPreferenceId   String?
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================================
+// CHECK-IN / CHECK-OUT
+// ============================================================
+model CheckIn {
+  id          String    @id @default(cuid())
+  userId      String
+  checkInAt   DateTime  @default(now())
+  checkOutAt  DateTime?
+  notes       String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("check_ins")
+}
