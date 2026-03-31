@@ -1,51 +1,49 @@
-// ============================================================
-// Constantes de branding — Maquina Team
-// Reaproveitado do legado HTML (index.html / faq.html)
-// ============================================================
-
 export const BRAND = {
-  name: 'Maquina Team',
-  slogan: 'Se transforme em uma Máquina!',
-  instructor: 'Professor Arthur Maquininha',
-  modalities: ['Muay Thai', 'Kickboxing', 'Funcional', 'Boxe Team'],
-
+  name: "Maquina Team",
+  slogan: "Treino forte. Ambiente premium. Evolucao real.",
+  instructor: "Professor Arthur Maquininha",
+  foundedYear: 2018,
+  modalities: ["Boxe", "Muay Thai", "Kickboxing", "Funcional"],
+  highlights: [
+    "Treinos tecnicos para iniciantes e atletas",
+    "Rotina forte de condicionamento para luta",
+    "Acompanhamento com professor experiente",
+    "Espaco focado em resultado, disciplina e constancia",
+  ],
   contact: {
-    phone: '(32) 99150-7929',
-    whatsapp: '5532991507929',
-    email: 'maquinateam.adm@gmail.com',
-    instagram: '@maquinateam',
-    instagramUrl: 'https://instagram.com/maquinateam',
+    phone: "(32) 99150-7929",
+    whatsapp: "5532991507929",
+    email: "maquinateam.adm@gmail.com",
+    instagram: "@maquinateam",
+    instagramUrl: "https://instagram.com/maquinateam",
     whatsappUrl:
-      'https://wa.me/5532991507929?text=Ol%C3%A1%21+Gostaria+de+saber+mais+sobre+os+treinos+na+Maquina+Team.',
+      "https://wa.me/5532991507929?text=Ola!+Gostaria+de+saber+mais+sobre+os+treinos+na+Maquina+Team.",
   },
-
   address: {
-    street: 'R. Fonseca Hermes, 5 - Centro',
-    city: 'Juiz de Fora - MG',
-    cep: '36013-090',
-    full: 'R. Fonseca Hermes, 5 - Centro, Juiz de Fora - MG, 36013-090',
+    street: "R. Fonseca Hermes, 5 - Centro",
+    city: "Juiz de Fora - MG",
+    cep: "36013-090",
+    full: "R. Fonseca Hermes, 5 - Centro, Juiz de Fora - MG, 36013-090",
   },
-
   hours: {
-    weekdays: '08:00 às 22:00',
-    weekend: '08:00 às 22:00',
-    label: 'Segunda a Domingo: 08:00 às 22:00',
+    weekdays: "08:00 as 22:00",
+    weekend: "08:00 as 22:00",
+    label: "Segunda a domingo: 08:00 as 22:00",
   },
-
   reviews: [
     {
-      author: 'João Augusto Freire',
-      text: 'Centro de treinamento de boxe de nível altíssimo, professor Arthur Maquininha super reconhecido, multi campeão! Excelente! Recomendo de olhos fechados!',
+      author: "Joao Augusto Freire",
+      text: "Centro de treinamento de altissimo nivel, com professor reconhecido e ambiente que faz voce querer voltar no dia seguinte.",
       rating: 5,
     },
     {
-      author: 'Cesar Nunes',
-      text: 'Melhor academia de boxe! Ambiente motivador. Aprendi muito e me senti acolhido desde o primeiro dia. Recomendo demais!',
+      author: "Cesar Nunes",
+      text: "Academia forte, organizada e acolhedora. Evolui muito no boxe e no condicionamento desde que comecei aqui.",
       rating: 5,
     },
     {
-      author: 'Matheus Correa',
-      text: 'Lugar perfeito para quem quer iniciar a praticar boxe, e também tem muitos atletas de alto nível para quem já é experiente! Recomendo muito.',
+      author: "Matheus Correa",
+      text: "Perfeito para quem quer iniciar com base tecnica e tambem para quem ja treina em alto nivel.",
       rating: 5,
     },
   ],

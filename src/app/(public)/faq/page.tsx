@@ -1,60 +1,69 @@
-import type { Metadata } from 'next';
-import { BRAND } from '@/lib/constants/brand';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { SectionHeading } from "@/components/public/SectionHeading";
+import { BRAND } from "@/lib/constants/brand";
 
 export const metadata: Metadata = {
-  title: 'FAQ — Perguntas Frequentes',
+  title: "FAQ",
+  description: "Perguntas frequentes sobre treinos, matricula, planos e rotina da academia.",
 };
 
-// Conteúdo migrado do legado faq.html
-const FAQ_CATEGORIES = [
+const faqCategories = [
   {
-    title: 'Sobre a Academia',
+    title: "Sobre a academia",
     items: [
       {
-        question: 'Quais modalidades de luta a academia oferece?',
-        answer: `A Maquina Team oferece ${BRAND.modalities.join(', ')}. Todas as modalidades são ministradas pelo ${BRAND.instructor}, multi campeão e instrutor reconhecido no cenário nacional.`,
+        question: "Quais modalidades a academia oferece?",
+        answer: `Hoje a academia trabalha com ${BRAND.modalities.join(", ")} dentro de uma rotina pensada para evolucao tecnica e condicionamento.`,
       },
       {
-        question: 'A academia é adequada para iniciantes?',
+        question: "A Maquina Team serve para iniciantes?",
         answer:
-          'Absolutamente! A Maquina Team é perfeita tanto para iniciantes quanto para atletas experientes. Oferecemos acompanhamento personalizado e ambiente acolhedor para quem está começando.',
+          "Sim. O ambiente foi estruturado para receber tanto quem esta começando quanto quem ja treina com mais ritmo e experiencia.",
       },
       {
-        question: 'Qual é a experiência dos instrutores?',
-        answer: `O ${BRAND.instructor} é multi campeão e possui vasta experiência no ensino de artes marciais. É reconhecido nacionalmente e tem formado diversos atletas de sucesso.`,
+        question: "Quem conduz a parte tecnica?",
+        answer: `${BRAND.instructor} lidera a identidade tecnica da academia e a construcao da rotina de treino.`,
       },
     ],
   },
   {
-    title: 'Matrículas e Planos',
+    title: "Planos e matricula",
     items: [
       {
-        question: 'Como faço para me matricular?',
-        answer: `Entre em contato pelo WhatsApp ${BRAND.contact.phone} ou visite nossa academia na ${BRAND.address.full}.`,
+        question: "Como faco minha matricula?",
+        answer:
+          "Voce pode falar com a equipe pelo WhatsApp, visitar a unidade ou criar sua conta e seguir com a orientacao comercial pelo sistema.",
       },
       {
-        question: 'Quais são as formas de pagamento?',
+        question: "Quais formas de pagamento sao aceitas?",
         answer:
-          'Aceitamos pagamento via Pix, cartão de crédito e débito. Os pagamentos são processados com segurança pelo Mercado Pago.',
+          "A operacao suporta pix, dinheiro, cartao, transferencia e outros metodos cadastrados no sistema.",
       },
       {
-        question: 'Posso cancelar meu plano?',
+        question: "Posso cancelar ou trocar meu plano?",
         answer:
-          'Sim. Planos mensais podem ser cancelados a qualquer momento. Para planos semestrais e anuais, consulte as condições específicas na academia.',
+          "Sim. O fluxo depende do plano contratado e da etapa da assinatura. A equipe consegue orientar o melhor caminho.",
       },
     ],
   },
   {
-    title: 'Treinos e Horários',
+    title: "Treino e rotina",
     items: [
       {
-        question: 'Quais são os horários de funcionamento?',
-        answer: `${BRAND.hours.label}.`,
+        question: "Qual e o horario de funcionamento?",
+        answer: BRAND.hours.label,
       },
       {
-        question: 'Preciso levar algum equipamento?',
+        question: "Preciso ter equipamento para comecar?",
         answer:
-          'Para as primeiras aulas não é necessário equipamento. Após a matrícula, orientamos sobre os materiais necessários para cada modalidade.',
+          "Nas primeiras aulas o foco e entrar na rotina. Depois disso a equipe orienta o que faz sentido adquirir para sua modalidade.",
+      },
+      {
+        question: "Existe acompanhamento pelo sistema?",
+        answer:
+          "Sim. O aluno pode acompanhar presenca, plano, pagamentos, treinos atribuidos e avisos pelo painel privado.",
       },
     ],
   },
@@ -62,45 +71,65 @@ const FAQ_CATEGORIES = [
 
 export default function FaqPage() {
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-          Perguntas Frequentes
-        </h1>
-        <p className="text-brand-gray-light text-lg">
-          Tire suas dúvidas sobre a {BRAND.name}
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <SectionHeading
+        eyebrow="FAQ"
+        title="Perguntas frequentes"
+        description="As respostas abaixo cobrem as duvidas mais comuns sobre matricula, planos, rotina e funcionamento da academia."
+        align="center"
+      />
 
-      <div className="max-w-3xl mx-auto space-y-12">
-        {FAQ_CATEGORIES.map((category) => (
-          <section key={category.title}>
-            <h2 className="text-xl font-bold text-brand-red mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-brand-red rounded-full inline-block" />
+      <div className="mx-auto mt-12 max-w-4xl space-y-8">
+        {faqCategories.map((category) => (
+          <section
+            key={category.title}
+            className="rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark p-6"
+          >
+            <h2 className="text-3xl font-bold uppercase text-white">
               {category.title}
             </h2>
-
-            <div className="space-y-4">
+            <div className="mt-6 space-y-4">
               {category.items.map((item) => (
                 <details
                   key={item.question}
-                  className="group bg-brand-gray-dark rounded-xl border border-brand-gray-mid overflow-hidden"
+                  className="group rounded-[1.5rem] border border-brand-gray-mid bg-brand-black/50 p-5"
                 >
-                  <summary className="flex items-center justify-between cursor-pointer px-6 py-4 text-white font-medium select-none list-none">
-                    {item.question}
-                    <span className="text-brand-red ml-4 flex-shrink-0 transition-transform group-open:rotate-180">
-                      ▼
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold uppercase text-white">
+                    <span>{item.question}</span>
+                    <span className="text-brand-gray-light transition group-open:rotate-45">
+                      +
                     </span>
                   </summary>
-                  <div className="px-6 pb-4 text-brand-gray-light text-sm leading-relaxed">
+                  <p className="pt-4 text-sm leading-7 text-brand-gray-light">
                     {item.answer}
-                  </div>
+                  </p>
                 </details>
               ))}
             </div>
           </section>
         ))}
       </div>
+
+      <section className="mt-12 rounded-[2rem] border border-brand-gray-mid bg-white px-6 py-8 text-black sm:px-8">
+        <p className="text-xs uppercase tracking-[0.3em] text-black/55">
+          Ainda com duvida?
+        </p>
+        <h2 className="mt-3 text-4xl font-bold uppercase">Fale com a equipe</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-black/70">
+          Se quiser ajuda para escolher plano, confirmar horarios ou entender a
+          experiencia da academia, a equipe responde rapido pelo WhatsApp.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Button asChild>
+            <a href={BRAND.contact.whatsappUrl} target="_blank" rel="noopener noreferrer">
+              Abrir WhatsApp
+            </a>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link href="/contato">Ir para contato</Link>
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

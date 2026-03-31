@@ -1,33 +1,43 @@
-import type { Metadata } from 'next';
-import { Roboto } from 'next/font/google';
-import './globals.css';
-import { BRAND } from '@/lib/constants/brand';
+import type { Metadata } from "next";
+import { Barlow_Condensed, Manrope } from "next/font/google";
+import "./globals.css";
+import { BRAND } from "@/lib/constants/brand";
+import { AppToaster } from "@/components/ui/AppToaster";
 
-const roboto = Roboto({
-  weight: ['300', '400', '500', '700', '900'],
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-barlow-condensed",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: `${BRAND.name} — Academia de Luta`,
+    default: `${BRAND.name} | Academia de luta`,
     template: `%s | ${BRAND.name}`,
   },
-  description: `${BRAND.slogan} Muay Thai, Kickboxing, Funcional e Boxe Team em Juiz de Fora - MG.`,
+  description: `${BRAND.slogan} Academia premium de luta com boxe, muay thai, kickboxing e funcional em Juiz de Fora.`,
   keywords: [
-    'academia de luta',
-    'muay thai',
-    'kickboxing',
-    'boxe',
-    'juiz de fora',
-    'maquina team',
+    "academia de luta",
+    "boxe",
+    "muay thai",
+    "kickboxing",
+    "funcional",
+    "juiz de fora",
+    "maquina team",
   ],
   openGraph: {
-    type: 'website',
-    locale: 'pt_BR',
+    type: "website",
+    locale: "pt_BR",
     siteName: BRAND.name,
+    title: BRAND.name,
+    description: BRAND.slogan,
   },
 };
 
@@ -37,8 +47,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={roboto.variable}>
-      <body>{children}</body>
+    <html
+      lang="pt-BR"
+      className={`${manrope.variable} ${barlowCondensed.variable}`}
+    >
+      <body>
+        {children}
+        <AppToaster />
+      </body>
     </html>
   );
 }

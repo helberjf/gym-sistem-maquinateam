@@ -1,72 +1,35 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { AuthCard } from "@/components/auth/AuthCard";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: 'Login — Área do Aluno',
+  title: "Login",
+  description: "Acesse sua conta para acompanhar planos, pagamentos e treinos.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
-/**
- * Página de login — placeholder para Fase 2.
- * A autenticação real será implementada com Auth.js v5.
- */
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await auth();
+
+  if (session?.user?.id) {
+    redirect("/dashboard");
+  }
+
+  const googleEnabled = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+  );
+
   return (
-    <div className="w-full max-w-sm">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-black text-white">Área do Aluno</h1>
-        <p className="text-brand-gray-light text-sm mt-1">
-          Entre com sua conta para acessar o painel
-        </p>
-      </div>
-
-      {/* TODO: Fase 2 — formulário real com React Hook Form + Zod + Auth.js */}
-      <div className="bg-brand-gray-dark border border-brand-gray-mid rounded-2xl p-8 space-y-4">
-        <div className="space-y-1">
-          <label className="block text-sm text-brand-gray-light" htmlFor="email">
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            placeholder="seu@email.com"
-            disabled
-            className="w-full px-4 py-2.5 rounded-lg bg-brand-black border border-brand-gray-mid text-white text-sm placeholder:text-brand-gray-light/50 disabled:opacity-50 cursor-not-allowed"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="block text-sm text-brand-gray-light" htmlFor="password">
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            disabled
-            className="w-full px-4 py-2.5 rounded-lg bg-brand-black border border-brand-gray-mid text-white text-sm placeholder:text-brand-gray-light/50 disabled:opacity-50 cursor-not-allowed"
-          />
-        </div>
-
-        <div className="pt-2">
-          <button
-            disabled
-            className="w-full py-2.5 rounded-lg bg-brand-red text-white font-medium text-sm disabled:opacity-50 cursor-not-allowed"
-          >
-            Entrar
-          </button>
-        </div>
-
-        <p className="text-center text-xs text-brand-gray-light pt-2">
-          🚧 Autenticação disponível na Fase 2
-        </p>
-      </div>
-
-      <p className="text-center text-sm text-brand-gray-light mt-6">
-        Não tem conta?{' '}
-        <Link href="/cadastro" className="text-brand-red hover:underline">
-          Cadastre-se
-        </Link>
-      </p>
-    </div>
+    <AuthCard
+      title="Entrar na conta"
+      description="Use seu e-mail e senha ou continue com Google."
+    >
+      <LoginForm googleEnabled={googleEnabled} />
+    </AuthCard>
   );
 }
