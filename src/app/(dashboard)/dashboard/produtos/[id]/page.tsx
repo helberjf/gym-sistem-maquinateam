@@ -12,7 +12,6 @@ import { formatCurrencyFromCents } from "@/lib/billing/constants";
 import {
   getProductStatusLabel,
   getSaleStatusLabel,
-  getPaymentMethodLabel,
   isLowStockProduct,
 } from "@/lib/commerce/constants";
 import {
@@ -68,6 +67,12 @@ export default async function ProductDetailPage({
               {getProductStatusLabel(product.status)}
             </StatusBadge>
             <StatusBadge tone="info">{product.category}</StatusBadge>
+            {product.storeVisible ? (
+              <StatusBadge tone="success">Vitrine publica</StatusBadge>
+            ) : (
+              <StatusBadge tone="neutral">Somente interno</StatusBadge>
+            )}
+            {product.featured ? <StatusBadge tone="info">Destaque</StatusBadge> : null}
             {lowStock ? (
               <StatusBadge tone={getStockHealthTone(product)}>
                 Estoque baixo
@@ -82,10 +87,10 @@ export default async function ProductDetailPage({
                   <img
                     src={product.images[0].url}
                     alt={product.images[0].altText ?? product.name}
-                    className="h-80 w-full object-cover"
+                    className="aspect-[4/3] w-full object-cover sm:h-80 sm:aspect-auto"
                   />
                 ) : (
-                  <div className="flex h-80 items-center justify-center text-sm text-brand-gray-light">
+                  <div className="flex aspect-[4/3] items-center justify-center text-sm text-brand-gray-light sm:h-80 sm:aspect-auto">
                     Sem imagem principal
                   </div>
                 )}
@@ -101,7 +106,7 @@ export default async function ProductDetailPage({
                       <img
                         src={image.url}
                         alt={image.altText ?? product.name}
-                        className="h-28 w-full object-cover"
+                        className="aspect-[4/3] w-full object-cover md:h-28 md:aspect-auto"
                       />
                     </div>
                   ))}
@@ -140,8 +145,31 @@ export default async function ProductDetailPage({
                   Atualizado em {formatDate(product.updatedAt)}
                 </p>
               </div>
+
+              <div className="rounded-2xl border border-brand-gray-mid bg-brand-black/30 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-brand-gray-light">
+                  Logistica
+                </p>
+                <p className="mt-3 text-sm text-white">
+                  {product.weightGrams ? `${product.weightGrams} g` : "Peso nao informado"}
+                </p>
+                <p className="mt-1 text-xs text-brand-gray-light">
+                  {product.heightCm && product.widthCm && product.lengthCm
+                    ? `${product.heightCm} x ${product.widthCm} x ${product.lengthCm} cm`
+                    : "Dimensoes nao informadas"}
+                </p>
+              </div>
             </div>
           </div>
+
+          {product.shortDescription ? (
+            <div className="mt-5 rounded-2xl border border-brand-gray-mid bg-brand-black/30 p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-brand-gray-light">
+                Descricao curta
+              </p>
+              <p className="mt-3 text-sm text-white">{product.shortDescription}</p>
+            </div>
+          ) : null}
 
           <div className="mt-5 rounded-2xl border border-brand-gray-mid bg-brand-black/30 p-4">
             <p className="text-xs uppercase tracking-[0.14em] text-brand-gray-light">Descricao</p>
@@ -189,11 +217,18 @@ export default async function ProductDetailPage({
                 slug: product.slug,
                 sku: product.sku,
                 category: product.category,
+                shortDescription: product.shortDescription ?? "",
                 description: product.description ?? "",
                 price: (product.priceCents / 100).toFixed(2),
                 stockQuantity: String(product.stockQuantity),
                 lowStockThreshold: String(product.lowStockThreshold),
                 trackInventory: product.trackInventory,
+                storeVisible: product.storeVisible,
+                featured: product.featured,
+                weightGrams: product.weightGrams ? String(product.weightGrams) : "",
+                heightCm: product.heightCm ? String(product.heightCm) : "",
+                widthCm: product.widthCm ? String(product.widthCm) : "",
+                lengthCm: product.lengthCm ? String(product.lengthCm) : "",
                 active: product.status !== "ARCHIVED",
                 images: product.images.map((image) => ({
                   url: image.url,

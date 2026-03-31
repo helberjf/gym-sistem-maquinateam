@@ -8,19 +8,19 @@ export function Footer() {
       <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
           <div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <Image
                 src="/images/logo.jpg"
                 alt={BRAND.name}
                 width={52}
                 height={52}
-                className="rounded-full border border-brand-gray-mid object-cover"
+                className="size-11 shrink-0 rounded-full border border-brand-gray-mid object-cover sm:size-[52px]"
               />
               <div>
-                <p className="text-xl font-bold uppercase tracking-[0.14em] text-white">
+                <p className="text-lg font-bold uppercase tracking-[0.12em] text-white sm:text-xl sm:tracking-[0.14em]">
                   {BRAND.name}
                 </p>
-                <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-brand-gray-light sm:text-xs sm:tracking-[0.24em]">
                   Fight club
                 </p>
               </div>
@@ -38,6 +38,9 @@ export function Footer() {
             <div className="mt-4 space-y-3 text-sm text-brand-gray-light">
               <Link href="/home" className="block hover:text-white">
                 Home
+              </Link>
+              <Link href="/loja" className="block hover:text-white">
+                Loja
               </Link>
               <Link href="/planos" className="block hover:text-white">
                 Planos
@@ -64,6 +67,9 @@ export function Footer() {
               </Link>
               <Link href="/dashboard" className="block hover:text-white">
                 Dashboard
+              </Link>
+              <Link href="/carrinho" className="block hover:text-white">
+                Carrinho
               </Link>
             </div>
           </div>

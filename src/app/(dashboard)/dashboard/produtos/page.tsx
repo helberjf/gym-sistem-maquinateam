@@ -152,7 +152,7 @@ export default async function ProductsPage({
                 className="rounded-3xl border border-brand-gray-mid bg-brand-gray-dark p-5"
               >
                 <div className="flex flex-col gap-4 md:flex-row">
-                  <div className="h-28 w-full overflow-hidden rounded-2xl border border-brand-gray-mid bg-brand-black md:w-32">
+                  <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-brand-gray-mid bg-brand-black md:h-28 md:w-32 md:shrink-0 md:aspect-auto">
                     {product.images[0] ? (
                       <img
                         src={product.images[0].url}
@@ -173,6 +173,12 @@ export default async function ProductsPage({
                         {getProductStatusLabel(product.status)}
                       </StatusBadge>
                       <StatusBadge tone="info">{product.category}</StatusBadge>
+                      {product.storeVisible ? (
+                        <StatusBadge tone="success">Na loja</StatusBadge>
+                      ) : (
+                        <StatusBadge tone="neutral">Somente interno</StatusBadge>
+                      )}
+                      {product.featured ? <StatusBadge tone="info">Destaque</StatusBadge> : null}
                       {lowStock ? (
                         <StatusBadge tone={getStockHealthTone(product)}>
                           Estoque baixo
@@ -181,7 +187,9 @@ export default async function ProductsPage({
                     </div>
 
                     <p className="mt-2 text-sm text-brand-gray-light">
-                      {product.description ?? "Sem descricao complementar cadastrada."}
+                      {product.shortDescription ??
+                        product.description ??
+                        "Sem descricao complementar cadastrada."}
                     </p>
                     <p className="mt-2 text-xs text-brand-gray-light">
                       SKU {product.sku} • {product._count.saleItems} item(ns) vendidos no historico

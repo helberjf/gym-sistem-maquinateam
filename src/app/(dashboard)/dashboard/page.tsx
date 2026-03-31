@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { UserRole } from "@prisma/client";
+import { OrderStatus, UserRole } from "@prisma/client";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { SimpleBarChart } from "@/components/dashboard/SimpleBarChart";
 import { Button } from "@/components/ui/Button";
@@ -136,6 +136,30 @@ export default async function DashboardPage() {
       title: "Treinos",
       description: "Modelos, atribuicoes e historico tecnico.",
       visible: hasPermission(session.user.role, "viewTrainings"),
+    },
+    {
+      href: "/dashboard/produtos",
+      title: "Produtos",
+      description: "Cadastro, vitrine e estoque da loja da academia.",
+      visible: hasPermission(session.user.role, "viewProducts"),
+    },
+    {
+      href: "/dashboard/pedidos",
+      title: "Meus pedidos",
+      description: "Historico de compra, entrega e status do e-commerce.",
+      visible: hasPermission(session.user.role, "viewStoreOrders"),
+    },
+    {
+      href: "/dashboard/pedidos-loja",
+      title: "Pedidos da loja",
+      description: "Operacao administrativa de checkout, separacao e envio.",
+      visible: hasPermission(session.user.role, "manageStoreOrders"),
+    },
+    {
+      href: "/dashboard/cupons",
+      title: "Cupons",
+      description: "Campanhas promocionais, regras e limites do catalogo.",
+      visible: hasPermission(session.user.role, "manageCoupons"),
     },
     {
       href: "/dashboard/avisos",
@@ -277,7 +301,23 @@ export default async function DashboardPage() {
       ];
     }
   } else if (session.user.role === UserRole.ADMIN) {
-    adminDashboardData = await getAdminDashboardData(viewer);
+    const [adminData, totalStoreOrders, openStoreOrders] = await Promise.all([
+      getAdminDashboardData(viewer),
+      prisma.order.count(),
+      prisma.order.count({
+        where: {
+          status: {
+            in: [
+              OrderStatus.PENDING,
+              OrderStatus.CONFIRMED,
+              OrderStatus.PROCESSING,
+              OrderStatus.SHIPPED,
+            ],
+          },
+        },
+      }),
+    ]);
+    adminDashboardData = adminData;
     summaryTitle = "Painel administrativo";
     summaryDescription =
       "Acompanhe operacao, financeiro, estoque, treinos recentes e atalhos para relatorios.";
@@ -307,9 +347,29 @@ export default async function DashboardPage() {
         value: String(adminDashboardData.metrics.pendingPayments),
         note: `${formatCurrencyFromCents(adminDashboardData.metrics.pendingAmountCents)} em aberto.`,
       },
+      {
+        label: "Pedidos da loja",
+        value: String(totalStoreOrders),
+        note: `${openStoreOrders} pedido(s) ainda no fluxo operacional.`,
+      },
     ];
   } else {
-    receptionDashboardData = await getReceptionDashboardData(viewer);
+    const [receptionData, openStoreOrders] = await Promise.all([
+      getReceptionDashboardData(viewer),
+      prisma.order.count({
+        where: {
+          status: {
+            in: [
+              OrderStatus.PENDING,
+              OrderStatus.CONFIRMED,
+              OrderStatus.PROCESSING,
+              OrderStatus.SHIPPED,
+            ],
+          },
+        },
+      }),
+    ]);
+    receptionDashboardData = receptionData;
     summaryTitle = "Painel da recepcao";
     summaryDescription =
       "Priorize check-ins, cobrancas pendentes, atrasos, vendas e novos cadastros do dia a dia.";
@@ -333,6 +393,11 @@ export default async function DashboardPage() {
         label: "Vendas recentes",
         value: String(receptionDashboardData.metrics.recentSales),
         note: "Movimentos recentes do caixa interno.",
+      },
+      {
+        label: "Pedidos da loja",
+        value: String(openStoreOrders),
+        note: "Fila online que ainda exige separacao, envio ou entrega.",
       },
       {
         label: "Cadastros recentes",

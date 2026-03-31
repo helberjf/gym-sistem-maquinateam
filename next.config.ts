@@ -1,17 +1,26 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next";
+
+const r2PublicUrl =
+  process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? process.env.R2_PUBLIC_URL ?? null;
+const r2RemotePattern = r2PublicUrl
+  ? (() => {
+      const parsed = new URL(r2PublicUrl);
+
+      return {
+        protocol: parsed.protocol.replace(":", "") as "http" | "https",
+        hostname: parsed.hostname,
+      };
+    })()
+  : null;
 
 const nextConfig: NextConfig = {
   images: {
-    formats: ['image/avif', 'image/webp'],
-    remotePatterns: [
-      // Cloudflare R2 (configurar URL real nas próximas fases)
-      // { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },
-    ],
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: r2RemotePattern ? [r2RemotePattern] : [],
   },
   experimental: {
-    // Habilitar Server Actions (padrão no Next.js 16)
     serverActions: {
-      allowedOrigins: ['localhost:3000'],
+      allowedOrigins: ["localhost:3000"],
     },
   },
 };

@@ -88,6 +88,21 @@ export default async function DashboardLayout({
       visible: hasPermission(session.user.role, "viewSales"),
     },
     {
+      href: "/dashboard/pedidos",
+      label: "Meus pedidos",
+      visible: hasPermission(session.user.role, "viewStoreOrders"),
+    },
+    {
+      href: "/dashboard/pedidos-loja",
+      label: "Pedidos da loja",
+      visible: hasPermission(session.user.role, "manageStoreOrders"),
+    },
+    {
+      href: "/dashboard/cupons",
+      label: "Cupons",
+      visible: hasPermission(session.user.role, "manageCoupons"),
+    },
+    {
       href: "/dashboard/avisos",
       label: "Avisos",
       visible: hasPermission(session.user.role, "viewAnnouncements"),

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { auth } from "@/auth";
 import { BRAND } from "@/lib/constants/brand";
 import { Button } from "@/components/ui/Button";
+import { StoreCartLink } from "@/components/store/StoreCartLink";
 
 export async function Navbar() {
   const session = await auth();
@@ -10,6 +11,7 @@ export async function Navbar() {
 
   const links = [
     { href: "/home", label: "Home" },
+    { href: "/loja", label: "Loja" },
     { href: "/planos", label: "Planos" },
     { href: "/contato", label: "Contato" },
     { href: "/faq", label: "FAQ" },
@@ -17,20 +19,20 @@ export async function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-gray-mid bg-brand-black/80 backdrop-blur-xl">
-      <nav className="mx-auto flex h-18 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/home" className="flex min-w-0 items-center gap-3">
+      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-18 sm:gap-4 sm:px-6 lg:px-8">
+        <Link href="/home" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <Image
             src="/images/logo.jpg"
             alt={`${BRAND.name} logo`}
             width={46}
             height={46}
-            className="rounded-full border border-brand-gray-mid object-cover"
+            className="size-10 shrink-0 rounded-full border border-brand-gray-mid object-cover sm:size-[46px]"
           />
           <div className="min-w-0">
-            <span className="block truncate text-xl font-bold uppercase tracking-[0.14em] text-white">
+            <span className="block truncate text-base font-bold uppercase tracking-[0.12em] text-white sm:text-xl sm:tracking-[0.14em]">
               {BRAND.name}
             </span>
-            <span className="block truncate text-[11px] uppercase tracking-[0.24em] text-brand-gray-light">
+            <span className="block truncate text-[10px] uppercase tracking-[0.18em] text-brand-gray-light sm:text-[11px] sm:tracking-[0.24em]">
               Premium fight club
             </span>
           </div>
@@ -47,6 +49,9 @@ export async function Navbar() {
               </Link>
             </li>
           ))}
+          <li>
+            <StoreCartLink />
+          </li>
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -63,10 +68,10 @@ export async function Navbar() {
         </div>
 
         <details className="group relative lg:hidden">
-          <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-brand-gray-mid bg-brand-gray-dark text-white">
+          <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-brand-gray-mid bg-brand-gray-dark text-white sm:h-11 sm:w-11">
             <span className="text-lg">+</span>
           </summary>
-          <div className="absolute right-0 mt-3 w-72 rounded-3xl border border-brand-gray-mid bg-brand-black/95 p-4 shadow-2xl">
+          <div className="absolute right-0 mt-3 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-brand-gray-mid bg-brand-black/95 p-4 shadow-2xl">
             <div className="space-y-2">
               {links.map((link) => (
                 <Link
@@ -77,6 +82,7 @@ export async function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <StoreCartLink mobile />
             </div>
             <div className="mt-4 grid grid-cols-1 gap-3">
               <Link

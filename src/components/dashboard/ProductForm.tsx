@@ -18,11 +18,18 @@ type ProductFormValues = {
   slug: string;
   sku: string;
   category: string;
+  shortDescription: string;
   description: string;
   price: string;
   stockQuantity: string;
   lowStockThreshold: string;
   trackInventory: boolean;
+  storeVisible: boolean;
+  featured: boolean;
+  weightGrams: string;
+  heightCm: string;
+  widthCm: string;
+  lengthCm: string;
   active: boolean;
   images: ProductImageValue[];
 };
@@ -68,11 +75,18 @@ export function ProductForm({
       slug: String(formData.get("slug") ?? ""),
       sku: String(formData.get("sku") ?? ""),
       category: String(formData.get("category") ?? ""),
+      shortDescription: String(formData.get("shortDescription") ?? ""),
       description: String(formData.get("description") ?? ""),
       priceCents: String(formData.get("priceCents") ?? ""),
       stockQuantity: String(formData.get("stockQuantity") ?? "0"),
       lowStockThreshold: String(formData.get("lowStockThreshold") ?? "3"),
       trackInventory: Boolean(formData.get("trackInventory")),
+      storeVisible: Boolean(formData.get("storeVisible")),
+      featured: Boolean(formData.get("featured")),
+      weightGrams: String(formData.get("weightGrams") ?? ""),
+      heightCm: String(formData.get("heightCm") ?? ""),
+      widthCm: String(formData.get("widthCm") ?? ""),
+      lengthCm: String(formData.get("lengthCm") ?? ""),
       active: Boolean(formData.get("active")),
       images: images.map((image, index) => ({
         ...image,
@@ -168,8 +182,23 @@ export function ProductForm({
       </div>
 
       <div className="space-y-1.5">
+        <label htmlFor="shortDescription" className={labelClassName}>
+          Descricao curta
+        </label>
+        <textarea
+          id="shortDescription"
+          name="shortDescription"
+          defaultValue={initialValues.shortDescription}
+          className={textareaClassName}
+        />
+        <p className={helperTextClassName}>
+          Resumo usado na vitrine publica, cards e destaques da loja.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
         <label htmlFor="description" className={labelClassName}>
-          Descricao
+          Descricao completa
         </label>
         <textarea
           id="description"
@@ -177,6 +206,65 @@ export function ProductForm({
           defaultValue={initialValues.description}
           className={textareaClassName}
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="space-y-1.5">
+          <label htmlFor="weightGrams" className={labelClassName}>
+            Peso (g)
+          </label>
+          <input
+            id="weightGrams"
+            name="weightGrams"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue={initialValues.weightGrams}
+            className={inputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="heightCm" className={labelClassName}>
+            Altura (cm)
+          </label>
+          <input
+            id="heightCm"
+            name="heightCm"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue={initialValues.heightCm}
+            className={inputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="widthCm" className={labelClassName}>
+            Largura (cm)
+          </label>
+          <input
+            id="widthCm"
+            name="widthCm"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue={initialValues.widthCm}
+            className={inputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="lengthCm" className={labelClassName}>
+            Comprimento (cm)
+          </label>
+          <input
+            id="lengthCm"
+            name="lengthCm"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue={initialValues.lengthCm}
+            className={inputClassName}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -188,6 +276,24 @@ export function ProductForm({
             className="h-4 w-4 accent-brand-red"
           />
           Controlar estoque automaticamente.
+        </label>
+        <label className="flex items-center gap-3 rounded-2xl border border-brand-gray-mid bg-brand-black/30 px-4 py-3 text-sm text-white">
+          <input
+            type="checkbox"
+            name="storeVisible"
+            defaultChecked={initialValues.storeVisible}
+            className="h-4 w-4 accent-brand-red"
+          />
+          Exibir no catalogo publico da loja.
+        </label>
+        <label className="flex items-center gap-3 rounded-2xl border border-brand-gray-mid bg-brand-black/30 px-4 py-3 text-sm text-white">
+          <input
+            type="checkbox"
+            name="featured"
+            defaultChecked={initialValues.featured}
+            className="h-4 w-4 accent-brand-red"
+          />
+          Destacar na home e nas secoes promocionais.
         </label>
         <label className="flex items-center gap-3 rounded-2xl border border-brand-gray-mid bg-brand-black/30 px-4 py-3 text-sm text-white">
           <input

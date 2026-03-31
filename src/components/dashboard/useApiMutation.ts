@@ -4,7 +4,7 @@ import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-type ApiMutationOptions<TPayload> = {
+type ApiMutationOptions = {
   endpoint: string;
   method: "POST" | "PATCH" | "DELETE";
   redirectTo?: string;
@@ -18,7 +18,7 @@ export function useApiMutation<TPayload>({
   redirectTo,
   successMessage,
   onSuccess,
-}: ApiMutationOptions<TPayload>) {
+}: ApiMutationOptions) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
