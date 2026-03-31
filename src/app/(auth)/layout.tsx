@@ -10,7 +10,7 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen flex-col bg-brand-black">
       <header className="border-b border-brand-gray-mid bg-brand-black/85 px-4 py-4 backdrop-blur sm:px-6">
-        <Link href="/home" className="flex w-fit items-center gap-2.5 sm:gap-3">
+        <Link href="/" className="flex w-fit items-center gap-2.5 sm:gap-3">
           <Image
             src="/images/logo.jpg"
             alt={BRAND.name}

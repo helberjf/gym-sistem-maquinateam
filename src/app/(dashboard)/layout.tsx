@@ -133,7 +133,7 @@ export default async function DashboardLayout({
         <aside className="w-full border-b border-brand-gray-mid bg-brand-gray-dark md:min-h-screen md:w-72 md:border-b-0 md:border-r">
           <div className="flex h-full flex-col gap-6 px-5 py-6">
             <div>
-              <Link href="/home" className="text-sm font-bold text-white">
+              <Link href="/" className="text-sm font-bold text-white">
                 {BRAND.name}
               </Link>
               <p className="mt-2 text-sm text-brand-gray-light">

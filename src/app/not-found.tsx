@@ -17,7 +17,7 @@ export default function NotFound() {
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild>
-            <Link href="/home">Ir para o site</Link>
+            <Link href="/">Ir para o site</Link>
           </Button>
           <Button asChild variant="secondary">
             <Link href="/dashboard">Ir para o dashboard</Link>

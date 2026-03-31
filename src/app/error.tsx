@@ -33,7 +33,7 @@ export default function GlobalError({
             Tentar de novo
           </Button>
           <Button asChild type="button" variant="secondary">
-            <Link href="/dashboard">Voltar ao dashboard</Link>
+            <Link href="/">Voltar ao inicio</Link>
           </Button>
         </div>
       </div>

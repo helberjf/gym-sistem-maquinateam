@@ -10,8 +10,8 @@ export async function Navbar() {
   const isAuthenticated = Boolean(session?.user?.id);
 
   const links = [
-    { href: "/home", label: "Home" },
-    { href: "/loja", label: "Loja" },
+    { href: "/", label: "Home" },
+    { href: "/loja", label: "Produtos" },
     { href: "/planos", label: "Planos" },
     { href: "/contato", label: "Contato" },
     { href: "/faq", label: "FAQ" },
@@ -20,7 +20,7 @@ export async function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-gray-mid bg-brand-black/80 backdrop-blur-xl">
       <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-18 sm:gap-4 sm:px-6 lg:px-8">
-        <Link href="/home" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+        <Link href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <Image
             src="/images/logo.jpg"
             alt={`${BRAND.name} logo`}

@@ -36,11 +36,11 @@ export function Footer() {
               Navegacao
             </h2>
             <div className="mt-4 space-y-3 text-sm text-brand-gray-light">
-              <Link href="/home" className="block hover:text-white">
+              <Link href="/" className="block hover:text-white">
                 Home
               </Link>
               <Link href="/loja" className="block hover:text-white">
-                Loja
+                Produtos
               </Link>
               <Link href="/planos" className="block hover:text-white">
                 Planos
