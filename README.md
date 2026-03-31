@@ -46,6 +46,7 @@ O produto agora entrega:
 
 Publico:
 
+- `GET /`
 - `GET /home`
 - `GET /loja`
 - `GET /loja/[slug]`
@@ -293,12 +294,13 @@ npm install
 Copie:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 Variaveis principais:
 
 - `DATABASE_URL`
+- `DIRECT_URL`
 - `AUTH_SECRET`
 - `AUTH_URL`
 - `AUTH_TRUST_HOST`
@@ -330,6 +332,13 @@ npm run db:migrate -- --name init
 npm run db:seed
 ```
 
+Para Supabase/Vercel, use o fluxo com `DIRECT_URL` para schema:
+
+```bash
+npm run db:status
+npm run db:migrate:deploy
+```
+
 ### 4. Rodar o app
 
 ```bash
@@ -345,12 +354,15 @@ npm run build
 npm exec prisma validate
 ```
 
-## PostgreSQL e Prisma
+## PostgreSQL, Prisma e Supabase
 
-- use um banco PostgreSQL acessivel pela `DATABASE_URL`
-- em desenvolvimento, `prisma migrate dev`
+- use `DATABASE_URL` para runtime da aplicacao
+- use `DIRECT_URL` para `db push`, migrations e seed controlado
+- em desenvolvimento local, `prisma migrate dev`
+- em ambiente Supabase, prefira `npm run db:migrate:deploy`
 - para regenerar seed local, `npm run db:seed`
 - para inspecao manual, `npm run db:studio`
+- guia detalhado: `docs/SUPABASE_SETUP.md`
 
 Seed inicial:
 

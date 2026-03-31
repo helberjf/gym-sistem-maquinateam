@@ -13,8 +13,12 @@
     "test:run": "vitest run",
     "db:format": "prisma format",
     "db:generate": "prisma generate",
+    "db:push": "node scripts/run-with-direct-url.cjs npx prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "node scripts/run-with-direct-url.cjs npx prisma migrate deploy",
+    "db:status": "node scripts/run-with-direct-url.cjs npx prisma migrate status",
     "db:seed": "prisma db seed",
+    "db:seed:direct": "node scripts/run-with-direct-url.cjs npx tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio"
   },
