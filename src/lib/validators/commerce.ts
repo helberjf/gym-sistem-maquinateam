@@ -142,6 +142,7 @@ const productBaseSchema = z.object({
   slug: slugSchema.optional(),
   sku: z.string().trim().min(2, "Informe o SKU.").max(60),
   category: z.string().trim().min(2, "Informe a categoria.").max(80),
+  shortDescription: optionalText,
   description: optionalText,
   priceCents: currencyField.refine((value) => value > 0, "Informe um preco maior que zero."),
   stockQuantity: optionalInteger
@@ -151,6 +152,20 @@ const productBaseSchema = z.object({
     .refine((value) => value === undefined || value >= 0, "Informe um limite valido.")
     .default(3),
   trackInventory: optionalBoolean.default(true),
+  storeVisible: optionalBoolean.default(true),
+  featured: optionalBoolean.default(false),
+  weightGrams: optionalInteger
+    .refine((value) => value === undefined || value >= 0, "Informe um peso valido.")
+    .optional(),
+  heightCm: optionalInteger
+    .refine((value) => value === undefined || value >= 0, "Informe uma altura valida.")
+    .optional(),
+  widthCm: optionalInteger
+    .refine((value) => value === undefined || value >= 0, "Informe uma largura valida.")
+    .optional(),
+  lengthCm: optionalInteger
+    .refine((value) => value === undefined || value >= 0, "Informe um comprimento valido.")
+    .optional(),
   active: optionalBoolean.default(true),
   images: z.array(productImageSchema).max(MAX_PRODUCT_IMAGES).default([]),
 });

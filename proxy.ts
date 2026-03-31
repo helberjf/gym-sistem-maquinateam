@@ -23,6 +23,9 @@ const dashboardPermissionRoutes = [
   { prefix: "/dashboard/treinos", permission: "viewTrainings" as const },
   { prefix: "/dashboard/produtos", permission: "viewProducts" as const },
   { prefix: "/dashboard/vendas", permission: "viewSales" as const },
+  { prefix: "/dashboard/pedidos-loja", permission: "manageStoreOrders" as const },
+  { prefix: "/dashboard/cupons", permission: "manageCoupons" as const },
+  { prefix: "/dashboard/pedidos", permission: "viewStoreOrders" as const },
   { prefix: "/dashboard/avisos", permission: "viewAnnouncements" as const },
   { prefix: "/dashboard/relatorios", permission: "viewReports" as const },
 ];

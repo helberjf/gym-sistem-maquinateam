@@ -11,6 +11,7 @@ export * from "@/lib/validators/billing";
 export * from "@/lib/validators/commerce";
 export * from "@/lib/validators/operations";
 export * from "@/lib/validators/reports";
+export * from "@/lib/validators/store";
 export * from "@/lib/validators/training";
 
 type UploadValidationOptions = {

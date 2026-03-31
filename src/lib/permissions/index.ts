@@ -44,6 +44,14 @@ export const PERMISSIONS = {
   manageProducts: [UserRole.ADMIN, UserRole.RECEPCAO],
   viewSales: [UserRole.ADMIN, UserRole.RECEPCAO],
   manageSales: [UserRole.ADMIN, UserRole.RECEPCAO],
+  viewStoreOrders: [
+    UserRole.ADMIN,
+    UserRole.RECEPCAO,
+    UserRole.PROFESSOR,
+    UserRole.ALUNO,
+  ],
+  manageStoreOrders: [UserRole.ADMIN, UserRole.RECEPCAO],
+  manageCoupons: [UserRole.ADMIN, UserRole.RECEPCAO],
   managePayments: [UserRole.ADMIN, UserRole.RECEPCAO],
   manageAttendance: [
     UserRole.ADMIN,

@@ -1,0 +1,1130 @@
+import type { z } from "zod";
+import {
+  DeliveryMethod,
+  InventoryMovementType,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+  ProductStatus,
+} from "@prisma/client";
+import { auth } from "@/auth";
+import { logAuditEvent } from "@/lib/audit";
+import { BRAND } from "@/lib/constants/brand";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "@/lib/errors";
+import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
+import { getCartSnapshot } from "@/lib/store/cart";
+import { validateCouponForItems } from "@/lib/store/coupons";
+import {
+  DELIVERY_METHOD_DESCRIPTIONS,
+  DELIVERY_METHOD_LABELS,
+} from "@/lib/store/constants";
+import type {
+  checkoutSchema,
+  orderFiltersSchema,
+  shippingAddressInputSchema,
+  updateOrderStatusSchema,
+} from "@/lib/validators/store";
+
+type ShippingAddressInput = z.infer<typeof shippingAddressInputSchema>;
+type CheckoutInput = z.infer<typeof checkoutSchema>;
+type OrderFilters = z.infer<typeof orderFiltersSchema>;
+type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+
+type MutationContext = {
+  userId: string;
+  request?: Request;
+};
+
+type PreparedCartItem = {
+  productId: string;
+  name: string;
+  slug: string;
+  sku: string;
+  category: string;
+  priceCents: number;
+  quantity: number;
+  trackInventory: boolean;
+  stockQuantity: number;
+  status: ProductStatus;
+  storeVisible: boolean;
+  lowStockThreshold: number;
+  imageUrl: string | null;
+  weightGrams: number | null;
+};
+
+function normalizeDigits(value?: string | null) {
+  return value?.replace(/\D/g, "") ?? "";
+}
+
+function normalizeOptionalString(value?: string | null) {
+  return value?.trim() || null;
+}
+
+function buildOrderNumber(referenceDate = new Date()) {
+  const year = referenceDate.getUTCFullYear();
+  const month = String(referenceDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getUTCDate()).padStart(2, "0");
+  const randomSuffix = Math.floor(Math.random() * 9000 + 1000);
+
+  return `PED-${year}${month}${day}-${randomSuffix}`;
+}
+
+function isLocalDeliveryAddress(address: ShippingAddressInput) {
+  const normalizedCity = address.city.trim().toLowerCase();
+  const normalizedState = address.state.trim().toUpperCase();
+  const zipCode = normalizeDigits(address.zipCode);
+
+  return (
+    normalizedState === "MG" &&
+    (normalizedCity.includes("juiz de fora") ||
+      zipCode.startsWith("360") ||
+      zipCode.startsWith("361"))
+  );
+}
+
+function getRegionMultiplier(state: string) {
+  const normalizedState = state.trim().toUpperCase();
+
+  if (["MG", "SP", "RJ", "ES"].includes(normalizedState)) {
+    return { multiplier: 1, days: 4 };
+  }
+
+  if (["PR", "SC", "RS", "GO", "DF", "MS", "MT"].includes(normalizedState)) {
+    return { multiplier: 1.3, days: 6 };
+  }
+
+  return { multiplier: 1.6, days: 8 };
+}
+
+function calculateShippingOptions(input: {
+  items: PreparedCartItem[];
+  address?: ShippingAddressInput | null;
+  subtotalCents: number;
+}) {
+  const totalWeightGrams = input.items.reduce(
+    (total, item) => total + (item.weightGrams ?? 450) * item.quantity,
+    0,
+  );
+  const totalUnits = input.items.reduce((total, item) => total + item.quantity, 0);
+  const options: Array<{
+    method: DeliveryMethod;
+    label: string;
+    description: string;
+    priceCents: number;
+    estimatedDays: number;
+  }> = [
+    {
+      method: DeliveryMethod.PICKUP,
+      label: DELIVERY_METHOD_LABELS[DeliveryMethod.PICKUP],
+      description: DELIVERY_METHOD_DESCRIPTIONS[DeliveryMethod.PICKUP],
+      priceCents: 0,
+      estimatedDays: 0,
+    },
+  ];
+
+  if (input.address && isLocalDeliveryAddress(input.address)) {
+    const localBase = input.subtotalCents >= 25000 ? 0 : 1490;
+    const localExtra = Math.max(0, totalUnits - 1) * 200;
+
+    options.push({
+      method: DeliveryMethod.LOCAL_DELIVERY,
+      label: DELIVERY_METHOD_LABELS[DeliveryMethod.LOCAL_DELIVERY],
+      description: DELIVERY_METHOD_DESCRIPTIONS[DeliveryMethod.LOCAL_DELIVERY],
+      priceCents: localBase + localExtra,
+      estimatedDays: input.subtotalCents >= 25000 ? 1 : 2,
+    });
+  }
+
+  if (input.address) {
+    const weightFactor = Math.max(0, Math.ceil(Math.max(totalWeightGrams, 1) / 500) - 1);
+    const region = getRegionMultiplier(input.address.state);
+    const basePrice = 1890 + weightFactor * 550;
+    const standardPrice = Math.round(basePrice * region.multiplier);
+
+    options.push({
+      method: DeliveryMethod.STANDARD_SHIPPING,
+      label: DELIVERY_METHOD_LABELS[DeliveryMethod.STANDARD_SHIPPING],
+      description: DELIVERY_METHOD_DESCRIPTIONS[DeliveryMethod.STANDARD_SHIPPING],
+      priceCents: input.subtotalCents >= 39900 ? 0 : standardPrice,
+      estimatedDays: region.days,
+    });
+  }
+
+  return options;
+}
+
+async function generateUniqueOrderNumber(tx: Prisma.TransactionClient, referenceDate: Date) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const orderNumber = buildOrderNumber(referenceDate);
+    const existing = await tx.order.findUnique({
+      where: {
+        orderNumber,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existing) {
+      return orderNumber;
+    }
+  }
+
+  throw new ConflictError("Nao foi possivel gerar um numero unico para o pedido.");
+}
+
+async function getAuthenticatedStoreUser() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new UnauthorizedError("Entre na sua conta para finalizar a compra.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: session.user.id,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      studentProfile: {
+        select: {
+          cpf: true,
+          addressLine: true,
+          city: true,
+          state: true,
+          zipCode: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new UnauthorizedError("Sua conta nao foi encontrada.");
+  }
+
+  return user;
+}
+
+async function resolveCheckoutAddress(userId: string, input: CheckoutInput) {
+  if (input.deliveryMethod === DeliveryMethod.PICKUP) {
+    return null;
+  }
+
+  if (input.shippingAddressId) {
+    const savedAddress = await prisma.shippingAddress.findFirst({
+      where: {
+        id: input.shippingAddressId,
+        userId,
+      },
+    });
+
+    if (!savedAddress) {
+      throw new NotFoundError("Endereco de entrega nao encontrado.");
+    }
+
+    return savedAddress;
+  }
+
+  if (!input.address) {
+    throw new ConflictError("Informe um endereco para concluir a entrega.");
+  }
+
+  return input.address;
+}
+
+async function saveAddressForUser(userId: string, address: ShippingAddressInput) {
+  const existing = await prisma.shippingAddress.findFirst({
+    where: {
+      userId,
+      zipCode: address.zipCode,
+      street: address.street,
+      number: address.number,
+      recipientName: address.recipientName,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const addressCount = await prisma.shippingAddress.count({
+    where: {
+      userId,
+    },
+  });
+
+  const created = await prisma.shippingAddress.create({
+    data: {
+      userId,
+      label: normalizeOptionalString(address.label),
+      recipientName: address.recipientName,
+      recipientPhone: address.recipientPhone,
+      zipCode: address.zipCode,
+      state: address.state,
+      city: address.city,
+      district: address.district,
+      street: address.street,
+      number: address.number,
+      complement: normalizeOptionalString(address.complement),
+      reference: normalizeOptionalString(address.reference),
+      isDefault: addressCount === 0,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return created.id;
+}
+
+async function getPreparedCartItemsForUserCart(tx: Prisma.TransactionClient, userId: string) {
+  const cart = await tx.cart.findUnique({
+    where: {
+      userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!cart) {
+    throw new ConflictError("Seu carrinho esta vazio.");
+  }
+
+  const items = await tx.cartItem.findMany({
+    where: {
+      cartId: cart.id,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+    select: {
+      id: true,
+      quantity: true,
+      product: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          sku: true,
+          category: true,
+          priceCents: true,
+          trackInventory: true,
+          stockQuantity: true,
+          status: true,
+          storeVisible: true,
+          lowStockThreshold: true,
+          weightGrams: true,
+          images: {
+            orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+            take: 1,
+            select: {
+              url: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (items.length === 0) {
+    throw new ConflictError("Seu carrinho esta vazio.");
+  }
+
+  return {
+    cartId: cart.id,
+    items: items.map((item) => {
+      if (!item.product.storeVisible || item.product.status === ProductStatus.ARCHIVED) {
+        throw new ConflictError(`O produto ${item.product.name} nao esta mais disponivel.`);
+      }
+
+      if (item.product.trackInventory && item.product.stockQuantity < item.quantity) {
+        throw new ConflictError(`Estoque insuficiente para ${item.product.name}.`);
+      }
+
+      return {
+        productId: item.product.id,
+        name: item.product.name,
+        slug: item.product.slug,
+        sku: item.product.sku,
+        category: item.product.category,
+        priceCents: item.product.priceCents,
+        quantity: item.quantity,
+        trackInventory: item.product.trackInventory,
+        stockQuantity: item.product.stockQuantity,
+        status: item.product.status,
+        storeVisible: item.product.storeVisible,
+        lowStockThreshold: item.product.lowStockThreshold,
+        imageUrl: item.product.images[0]?.url ?? null,
+        weightGrams: item.product.weightGrams ?? null,
+      } satisfies PreparedCartItem;
+    }),
+  };
+}
+
+export async function getCheckoutPageData() {
+  const user = await getAuthenticatedStoreUser();
+  await getCartSnapshot();
+  const [addresses, cartSnapshot] = await Promise.all([
+    prisma.shippingAddress.findMany({
+      where: {
+        userId: user.id,
+      },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.order.count({
+      where: {
+        userId: user.id,
+      },
+    }),
+  ]);
+
+  const cart = await prisma.cart.findUnique({
+    where: {
+      userId: user.id,
+    },
+    select: {
+      items: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          quantity: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              category: true,
+              shortDescription: true,
+              priceCents: true,
+              status: true,
+              storeVisible: true,
+              stockQuantity: true,
+              lowStockThreshold: true,
+              trackInventory: true,
+              images: {
+                orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+                take: 1,
+                select: {
+                  url: true,
+                  altText: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return {
+    user,
+    addresses,
+    cart: cart ?? { items: [] },
+    customerOrderCount: cartSnapshot,
+    suggestedAddress:
+      user.studentProfile?.addressLine && user.studentProfile.city && user.studentProfile.state
+        ? {
+            label: "Endereco do cadastro",
+            recipientName: user.name,
+            recipientPhone: user.phone ?? "",
+            zipCode: user.studentProfile.zipCode ?? "",
+            state: user.studentProfile.state,
+            city: user.studentProfile.city,
+            district: "Centro",
+            street: user.studentProfile.addressLine,
+            number: "s/n",
+            complement: "",
+            reference: "",
+          }
+        : null,
+  };
+}
+
+export async function getShippingQuoteForActiveCart(input: {
+  userId: string;
+  address: ShippingAddressInput;
+}) {
+  await getCartSnapshot();
+  const cart = await prisma.cart.findUnique({
+    where: {
+      userId: input.userId,
+    },
+    select: {
+      items: {
+        select: {
+          quantity: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              sku: true,
+              category: true,
+              priceCents: true,
+              trackInventory: true,
+              stockQuantity: true,
+              status: true,
+              storeVisible: true,
+              lowStockThreshold: true,
+              images: {
+                take: 1,
+                select: {
+                  url: true,
+                },
+              },
+              weightGrams: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!cart || cart.items.length === 0) {
+    throw new ConflictError("Seu carrinho esta vazio.");
+  }
+
+  const preparedItems = cart.items.map((item) => ({
+    productId: item.product.id,
+    name: item.product.name,
+    slug: item.product.slug,
+    sku: item.product.sku,
+    category: item.product.category,
+    priceCents: item.product.priceCents,
+    quantity: item.quantity,
+    trackInventory: item.product.trackInventory,
+    stockQuantity: item.product.stockQuantity,
+    status: item.product.status,
+    storeVisible: item.product.storeVisible,
+    lowStockThreshold: item.product.lowStockThreshold,
+    imageUrl: item.product.images[0]?.url ?? null,
+    weightGrams: item.product.weightGrams ?? null,
+  })) satisfies PreparedCartItem[];
+  const subtotalCents = preparedItems.reduce(
+    (total, item) => total + item.priceCents * item.quantity,
+    0,
+  );
+
+  return calculateShippingOptions({
+    items: preparedItems,
+    address: input.address,
+    subtotalCents,
+  });
+}
+
+export async function createOrderFromActiveCart(
+  input: CheckoutInput,
+  context: MutationContext,
+) {
+  const user = await getAuthenticatedStoreUser();
+  await getCartSnapshot();
+
+  if (user.id !== context.userId) {
+    throw new ForbiddenError("A conta autenticada nao corresponde ao checkout.");
+  }
+
+  const resolvedAddress = await resolveCheckoutAddress(user.id, input);
+
+  return prisma.$transaction(async (tx) => {
+    const { cartId, items } = await getPreparedCartItemsForUserCart(tx, user.id);
+    const subtotalCents = items.reduce(
+      (total, item) => total + item.priceCents * item.quantity,
+      0,
+    );
+
+    const shippingOptions = calculateShippingOptions({
+      items,
+      address: resolvedAddress as ShippingAddressInput | null,
+      subtotalCents,
+    });
+    const selectedShipping = shippingOptions.find(
+      (option) => option.method === input.deliveryMethod,
+    );
+
+    if (!selectedShipping) {
+      throw new ConflictError("A opcao de entrega escolhida nao esta disponivel.");
+    }
+
+    const couponValidation = input.couponCode
+      ? await validateCouponForItems({
+          db: tx,
+          code: input.couponCode,
+          userId: user.id,
+          items: items.map((item) => ({
+            productId: item.productId,
+            category: item.category,
+            quantity: item.quantity,
+            unitPriceCents: item.priceCents,
+          })),
+        })
+      : null;
+
+    if (couponValidation && !couponValidation.ok) {
+      throw new ConflictError(couponValidation.message);
+    }
+
+    const discountCents = couponValidation?.ok ? couponValidation.discountCents : 0;
+    const orderNumber = await generateUniqueOrderNumber(tx, new Date());
+    const totalCents = Math.max(
+      0,
+      subtotalCents - discountCents + selectedShipping.priceCents,
+    );
+
+    const order = await tx.order.create({
+      data: {
+        orderNumber,
+        userId: user.id,
+        couponId: couponValidation?.ok ? couponValidation.coupon.id : null,
+        status: OrderStatus.CONFIRMED,
+        paymentStatus: PaymentStatus.PENDING,
+        paymentMethod: input.paymentMethod as PaymentMethod,
+        deliveryMethod: selectedShipping.method,
+        deliveryLabel: selectedShipping.label,
+        shippingEstimatedDays: selectedShipping.estimatedDays,
+        notes: normalizeOptionalString(input.notes),
+        subtotalCents,
+        discountCents,
+        shippingCents: selectedShipping.priceCents,
+        totalCents,
+        customerName: user.name,
+        customerEmail: user.email,
+        customerPhone: user.phone ?? "",
+        customerDocument: user.studentProfile?.cpf ?? null,
+        shippingAddressLabel:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? "Retirada na academia"
+            : normalizeOptionalString((resolvedAddress as ShippingAddressInput | null)?.label),
+        shippingRecipientName:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? user.name
+            : (resolvedAddress as ShippingAddressInput | null)?.recipientName ?? null,
+        shippingRecipientPhone:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? user.phone ?? null
+            : (resolvedAddress as ShippingAddressInput | null)?.recipientPhone ?? null,
+        shippingZipCode:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? BRAND.address.cep
+            : (resolvedAddress as ShippingAddressInput | null)?.zipCode ?? null,
+        shippingState:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? "MG"
+            : (resolvedAddress as ShippingAddressInput | null)?.state ?? null,
+        shippingCity:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? "Juiz de Fora"
+            : (resolvedAddress as ShippingAddressInput | null)?.city ?? null,
+        shippingDistrict:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? "Centro"
+            : (resolvedAddress as ShippingAddressInput | null)?.district ?? null,
+        shippingStreet:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? BRAND.address.street
+            : (resolvedAddress as ShippingAddressInput | null)?.street ?? null,
+        shippingNumber:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? "5"
+            : (resolvedAddress as ShippingAddressInput | null)?.number ?? null,
+        shippingComplement:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? null
+            : normalizeOptionalString((resolvedAddress as ShippingAddressInput | null)?.complement),
+        shippingReference:
+          input.deliveryMethod === DeliveryMethod.PICKUP
+            ? BRAND.hours.label
+            : normalizeOptionalString((resolvedAddress as ShippingAddressInput | null)?.reference),
+        items: {
+          create: items.map((item) => ({
+            productId: item.productId,
+            productName: item.name,
+            productSlug: item.slug,
+            productSku: item.sku,
+            productCategory: item.category,
+            productImageUrl: item.imageUrl,
+            quantity: item.quantity,
+            unitPriceCents: item.priceCents,
+            lineTotalCents: item.priceCents * item.quantity,
+          })),
+        },
+        statusHistory: {
+          create: {
+            status: OrderStatus.CONFIRMED,
+            note: "Pedido criado via checkout da loja.",
+            changedByUserId: user.id,
+          },
+        },
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        totalCents: true,
+      },
+    });
+
+    if (couponValidation?.ok) {
+      await tx.coupon.update({
+        where: {
+          id: couponValidation.coupon.id,
+        },
+        data: {
+          usageCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      await tx.couponRedemption.create({
+        data: {
+          couponId: couponValidation.coupon.id,
+          orderId: order.id,
+          userId: user.id,
+          discountCents,
+        },
+      });
+    }
+
+    for (const item of items) {
+      if (!item.trackInventory) {
+        continue;
+      }
+
+      const nextStock = item.stockQuantity - item.quantity;
+
+      await tx.product.update({
+        where: {
+          id: item.productId,
+        },
+        data: {
+          stockQuantity: {
+            decrement: item.quantity,
+          },
+          status: nextStock <= 0 ? ProductStatus.OUT_OF_STOCK : ProductStatus.ACTIVE,
+        },
+      });
+
+      await tx.inventoryMovement.create({
+        data: {
+          productId: item.productId,
+          orderId: order.id,
+          type: InventoryMovementType.ORDER_RESERVE,
+          quantityDelta: item.quantity * -1,
+          reason: "Reserva automatica de estoque no checkout",
+          performedByUserId: user.id,
+        },
+      });
+    }
+
+    await tx.cartItem.deleteMany({
+      where: {
+        cartId,
+      },
+    });
+
+    if (
+      resolvedAddress &&
+      input.saveAddress &&
+      !input.shippingAddressId &&
+      input.deliveryMethod !== DeliveryMethod.PICKUP
+    ) {
+      await saveAddressForUser(user.id, resolvedAddress as ShippingAddressInput);
+    }
+
+    await logAuditEvent({
+      request: context.request,
+      actorId: user.id,
+      action: "STORE_ORDER_CREATED",
+      entityType: "Order",
+      entityId: order.id,
+      summary: `Pedido ${order.orderNumber} criado na loja.`,
+      afterData: {
+        orderNumber: order.orderNumber,
+        totalCents: order.totalCents,
+        deliveryMethod: input.deliveryMethod,
+        paymentMethod: input.paymentMethod,
+        couponCode: couponValidation?.ok ? couponValidation.coupon.code : null,
+      },
+    });
+
+    return order;
+  });
+}
+
+export async function getMyOrdersData(userId: string, filters?: OrderFilters) {
+  const where: Prisma.OrderWhereInput = {
+    userId,
+    ...(filters?.q
+      ? {
+          OR: [
+            {
+              orderNumber: {
+                contains: filters.q,
+                mode: "insensitive",
+              },
+            },
+            {
+              items: {
+                some: {
+                  productName: {
+                    contains: filters.q,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+    ...(filters?.status && filters.status !== "all"
+      ? {
+          status: filters.status,
+        }
+      : {}),
+  };
+
+  return prisma.order.findMany({
+    where,
+    orderBy: {
+      placedAt: "desc",
+    },
+    select: {
+      id: true,
+      orderNumber: true,
+      status: true,
+      paymentStatus: true,
+      deliveryMethod: true,
+      deliveryLabel: true,
+      shippingEstimatedDays: true,
+      subtotalCents: true,
+      discountCents: true,
+      shippingCents: true,
+      totalCents: true,
+      placedAt: true,
+      paidAt: true,
+      deliveredAt: true,
+      items: {
+        orderBy: {
+          productName: "asc",
+        },
+        select: {
+          id: true,
+          productName: true,
+          productSlug: true,
+          productImageUrl: true,
+          quantity: true,
+          unitPriceCents: true,
+          lineTotalCents: true,
+        },
+      },
+    },
+  });
+}
+
+export async function getOrderDetailForUser(input: {
+  orderId: string;
+  userId: string;
+  canManage: boolean;
+}) {
+  const order = await prisma.order.findFirst({
+    where: input.canManage
+      ? {
+          id: input.orderId,
+        }
+      : {
+          id: input.orderId,
+          userId: input.userId,
+        },
+    select: {
+      id: true,
+      orderNumber: true,
+      status: true,
+      paymentStatus: true,
+      paymentMethod: true,
+      deliveryMethod: true,
+      deliveryLabel: true,
+      shippingEstimatedDays: true,
+      trackingCode: true,
+      notes: true,
+      subtotalCents: true,
+      discountCents: true,
+      shippingCents: true,
+      totalCents: true,
+      customerName: true,
+      customerEmail: true,
+      customerPhone: true,
+      shippingRecipientName: true,
+      shippingRecipientPhone: true,
+      shippingZipCode: true,
+      shippingState: true,
+      shippingCity: true,
+      shippingDistrict: true,
+      shippingStreet: true,
+      shippingNumber: true,
+      shippingComplement: true,
+      shippingReference: true,
+      placedAt: true,
+      paidAt: true,
+      deliveredAt: true,
+      cancelledAt: true,
+      coupon: {
+        select: {
+          code: true,
+          description: true,
+        },
+      },
+      items: {
+        orderBy: {
+          productName: "asc",
+        },
+        select: {
+          id: true,
+          productName: true,
+          productSlug: true,
+          productSku: true,
+          productCategory: true,
+          productImageUrl: true,
+          quantity: true,
+          unitPriceCents: true,
+          lineTotalCents: true,
+        },
+      },
+      statusHistory: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          status: true,
+          note: true,
+          createdAt: true,
+          changedByUser: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new NotFoundError("Pedido nao encontrado.");
+  }
+
+  return order;
+}
+
+export async function getAdminOrdersData(filters: OrderFilters) {
+  const where: Prisma.OrderWhereInput = {
+    ...(filters.q
+      ? {
+          OR: [
+            {
+              orderNumber: {
+                contains: filters.q,
+                mode: "insensitive",
+              },
+            },
+            {
+              customerName: {
+                contains: filters.q,
+                mode: "insensitive",
+              },
+            },
+            {
+              customerEmail: {
+                contains: filters.q,
+                mode: "insensitive",
+              },
+            },
+          ],
+        }
+      : {}),
+    ...(filters.status !== "all"
+      ? {
+          status: filters.status,
+        }
+      : {}),
+  };
+
+  const [orders, summary] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      orderBy: {
+        placedAt: "desc",
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        paymentStatus: true,
+        deliveryMethod: true,
+        deliveryLabel: true,
+        totalCents: true,
+        placedAt: true,
+        customerName: true,
+        items: {
+          take: 2,
+          orderBy: {
+            productName: "asc",
+          },
+          select: {
+            id: true,
+            productName: true,
+            quantity: true,
+          },
+        },
+      },
+    }),
+    prisma.order.groupBy({
+      by: ["status"],
+      _count: {
+        _all: true,
+      },
+    }),
+  ]);
+
+  return {
+    orders,
+    summary,
+  };
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  input: UpdateOrderStatusInput,
+  context: MutationContext,
+) {
+  const session = await auth();
+
+  if (!session?.user?.role || !hasPermission(session.user.role, "manageStoreOrders")) {
+    throw new ForbiddenError("Acesso negado.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!current) {
+      throw new NotFoundError("Pedido nao encontrado.");
+    }
+
+    if (current.status === OrderStatus.CANCELLED && input.status !== OrderStatus.CANCELLED) {
+      throw new ConflictError("Pedidos cancelados nao podem ser reativados por esta acao.");
+    }
+
+    if (
+      input.status === OrderStatus.CANCELLED &&
+      current.inventoryRestoredAt === null
+    ) {
+      for (const item of current.items) {
+        await tx.product.update({
+          where: {
+            id: item.productId,
+          },
+          data: {
+            stockQuantity: {
+              increment: item.quantity,
+            },
+            status: ProductStatus.ACTIVE,
+          },
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            productId: item.productId,
+            orderId: current.id,
+            type: InventoryMovementType.ORDER_RESTORE,
+            quantityDelta: item.quantity,
+            reason: "Reposicao automatica apos cancelamento do pedido",
+            note: normalizeOptionalString(input.note),
+            performedByUserId: context.userId,
+          },
+        });
+      }
+    }
+
+    const order = await tx.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status: input.status,
+        paymentStatus: input.paymentStatus
+          ? (input.paymentStatus as PaymentStatus)
+          : input.status === OrderStatus.PAID
+            ? PaymentStatus.PAID
+            : input.status === OrderStatus.CANCELLED
+              ? PaymentStatus.CANCELLED
+              : undefined,
+        trackingCode: normalizeOptionalString(input.trackingCode),
+        paidAt:
+          input.status === OrderStatus.PAID && current.paidAt === null
+            ? new Date()
+            : current.paidAt,
+        cancelledAt:
+          input.status === OrderStatus.CANCELLED && current.cancelledAt === null
+            ? new Date()
+            : current.cancelledAt,
+        deliveredAt:
+          input.status === OrderStatus.DELIVERED && current.deliveredAt === null
+            ? new Date()
+            : current.deliveredAt,
+        inventoryRestoredAt:
+          input.status === OrderStatus.CANCELLED && current.inventoryRestoredAt === null
+            ? new Date()
+            : current.inventoryRestoredAt,
+        statusHistory: {
+          create: {
+            status: input.status,
+            note: normalizeOptionalString(input.note),
+            changedByUserId: context.userId,
+          },
+        },
+      },
+    });
+
+    await logAuditEvent({
+      request: context.request,
+      actorId: context.userId,
+      action: "STORE_ORDER_STATUS_UPDATED",
+      entityType: "Order",
+      entityId: order.id,
+      summary: `Pedido ${order.orderNumber} atualizado para ${input.status}.`,
+      beforeData: {
+        status: current.status,
+        paymentStatus: current.paymentStatus,
+      },
+      afterData: {
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        trackingCode: order.trackingCode,
+      },
+    });
+
+    return order;
+  });
+}
