@@ -20,6 +20,40 @@ type SessionUserShape = {
   emailVerified?: Date | string | null;
 };
 
+function getAuthErrorType(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const candidate = error as { type?: unknown; name?: unknown };
+
+  if (typeof candidate.type === "string") {
+    return candidate.type;
+  }
+
+  if (typeof candidate.name === "string") {
+    return candidate.name;
+  }
+
+  return null;
+}
+
+function writeAuthLog(error: unknown) {
+  if (!(error instanceof Error)) {
+    process.stderr.write(`[auth][error] ${String(error)}\n`);
+    return;
+  }
+
+  const authErrorType = getAuthErrorType(error) ?? error.name;
+  const details = [`[auth][error] ${authErrorType}: ${error.message}`];
+
+  if (error.stack) {
+    details.push(error.stack);
+  }
+
+  process.stderr.write(`${details.join("\n")}\n`);
+}
+
 function buildStudentRegistrationNumber(userId: string) {
   return `ALU-${userId.slice(-8).toUpperCase()}`;
 }
@@ -56,7 +90,11 @@ export const authConfig: NextAuthConfig = {
   trustHost: true,
   logger: {
     error(error) {
+      const authErrorType = getAuthErrorType(error);
+
       if (
+        authErrorType === "JWTSessionError" ||
+        authErrorType === "SessionTokenError" ||
         error instanceof InvalidCredentialsError ||
         error instanceof EmailNotVerifiedError ||
         error instanceof AccountDisabledError ||
@@ -67,7 +105,7 @@ export const authConfig: NextAuthConfig = {
         return;
       }
 
-      console.error(error);
+      writeAuthLog(error);
     },
   },
   session: {

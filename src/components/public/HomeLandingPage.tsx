@@ -168,19 +168,30 @@ export function HomeLandingPage({
           </div>
 
           <div className="mt-4 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
-            {stats.map((item) => (
-              <div
-                key={item.label}
-                className="min-w-0 rounded-2xl border border-brand-gray-mid bg-brand-black/60 p-3 backdrop-blur sm:p-4"
-              >
-                <p className="text-[10px] uppercase tracking-[0.24em] text-brand-gray-light sm:text-xs">
-                  {item.label}
-                </p>
-                <p className="mt-2 whitespace-nowrap text-[clamp(0.72rem,3vw,0.95rem)] font-bold leading-tight tracking-tight text-white sm:text-2xl">
-                  {item.value}
-                </p>
-              </div>
-            ))}
+            {stats.map((item) => {
+              const compactValue = item.label === "Foco";
+
+              return (
+                <div
+                  key={item.label}
+                  className="min-w-0 rounded-2xl border border-brand-gray-mid bg-brand-black/60 p-3 backdrop-blur sm:p-4"
+                >
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-brand-gray-light sm:text-xs">
+                    {item.label}
+                  </p>
+                  <p
+                    className={[
+                      "mt-2 whitespace-nowrap leading-tight text-white sm:text-2xl",
+                      compactValue
+                        ? "text-[clamp(0.5rem,2vw,0.72rem)] font-semibold tracking-normal"
+                        : "text-[clamp(0.72rem,3vw,0.95rem)] font-bold tracking-tight",
+                    ].join(" ")}
+                  >
+                    {item.value}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
