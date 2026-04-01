@@ -106,6 +106,10 @@ export const cartItemMutationSchema = z.object({
   ),
 });
 
+export const wishlistMutationSchema = z.object({
+  productId: z.string().min(1, "Produto obrigatorio."),
+});
+
 export const updateCartItemSchema = z.object({
   quantity: z.preprocess(
     (value) => {

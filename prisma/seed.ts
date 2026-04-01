@@ -168,6 +168,8 @@ async function main() {
     prisma.announcement.deleteMany(),
     prisma.trainingAssignment.deleteMany(),
     prisma.trainingTemplate.deleteMany(),
+    prisma.wishlistItem.deleteMany(),
+    prisma.wishlist.deleteMany(),
     prisma.inventoryMovement.deleteMany(),
     prisma.orderStatusHistory.deleteMany(),
     prisma.couponRedemption.deleteMany(),
@@ -1126,6 +1128,25 @@ async function main() {
         isPrimary: true,
       },
     ],
+  });
+
+  await prisma.wishlist.create({
+    data: {
+      userId: aliceUser.id,
+      items: {
+        create: [
+          {
+            productId: productMap["camiseta-dry-fit-maquina-team"].id,
+          },
+          {
+            productId: productMap["luva-boxe-maquina-team-12oz"].id,
+          },
+          {
+            productId: productMap["corda-speed-pro"].id,
+          },
+        ],
+      },
+    },
   });
 
   const saleOne = await createPaidProductSale({

@@ -143,6 +143,7 @@ model User {
   productSales          ProductSale[]        @relation("ProductSaleSoldBy")
   createdEnrollments    ClassEnrollment[]    @relation("ClassEnrollmentCreatedBy")
   storeCart             Cart?
+  wishlist              Wishlist?
   shippingAddresses     ShippingAddress[]
   orders                Order[]
   couponRedemptions     CouponRedemption[]
@@ -474,6 +475,7 @@ model Product {
   images            ProductImage[]
   saleItems         ProductSaleItem[]
   cartItems         CartItem[]
+  wishlistItems     WishlistItem[]
   orderItems        OrderItem[]
   inventoryMoves    InventoryMovement[]
   createdAt         DateTime            @default(now())
@@ -543,6 +545,31 @@ model ProductSaleItem {
   @@index([productSaleId])
   @@index([productId])
   @@map("product_sale_items")
+}
+
+model Wishlist {
+  id        String         @id @default(cuid())
+  userId     String         @unique
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      WishlistItem[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String    @id @default(cuid())
+  wishlistId String
+  productId  String
+  wishlist   Wishlist  @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId])
+  @@index([productId])
+  @@map("wishlist_items")
 }
 
 model Cart {
