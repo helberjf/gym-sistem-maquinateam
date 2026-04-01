@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { BRAND } from "@/lib/constants/brand";
 import { Button } from "@/components/ui/Button";
 import { StoreCartLink } from "@/components/store/StoreCartLink";
+import { StoreWishlistLink } from "@/components/store/StoreWishlistLink";
 
 export async function Navbar() {
   const session = await auth();
@@ -50,6 +51,9 @@ export async function Navbar() {
             </li>
           ))}
           <li>
+            <StoreWishlistLink />
+          </li>
+          <li>
             <StoreCartLink />
           </li>
         </ul>
@@ -82,6 +86,7 @@ export async function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <StoreWishlistLink mobile />
               <StoreCartLink mobile />
             </div>
             <div className="mt-4 grid grid-cols-1 gap-3">
