@@ -1,0 +1,1 @@
+-- Legacy remote migration kept as a no-op to preserve Prisma history.
