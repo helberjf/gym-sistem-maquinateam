@@ -51,6 +51,9 @@ export function Footer() {
               <Link href="/faq" className="block hover:text-white">
                 FAQ
               </Link>
+              <Link href="/politica-de-privacidade" className="block hover:text-white">
+                Politica de Privacidade
+              </Link>
             </div>
           </div>
 
@@ -105,9 +108,14 @@ export function Footer() {
           <p>
             {new Date().getFullYear()} {BRAND.name}. Todos os direitos reservados.
           </p>
-          <p>
-            {BRAND.address.full} - {BRAND.hours.label}
-          </p>
+          <div className="flex flex-col gap-2 md:items-end">
+            <p>
+              {BRAND.address.full} - {BRAND.hours.label}
+            </p>
+            <Link href="/politica-de-privacidade" className="hover:text-white">
+              Politica de Privacidade
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

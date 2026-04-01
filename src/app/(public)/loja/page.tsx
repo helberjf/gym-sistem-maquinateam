@@ -133,7 +133,7 @@ export default async function StorePage({
         ) : null}
       </section>
 
-      <section className="mt-6 rounded-[2rem] border border-neutral-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-4xl border border-neutral-200 bg-white p-5 shadow-sm">
         <form className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.25fr)_repeat(5,minmax(0,1fr))]">
           <input
             name="q"
