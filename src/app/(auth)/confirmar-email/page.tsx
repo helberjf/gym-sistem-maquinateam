@@ -27,8 +27,11 @@ export default async function ConfirmarEmailPage({
   const token = getSingleValue(params.token);
   const email = getSingleValue(params.email);
   const sent = getSingleValue(params.sent);
+  const callbackUrl = getSingleValue(params.callbackUrl);
   const result = token ? await consumeVerificationToken(token) : null;
   const targetEmail = result && "email" in result ? result.email : email;
+  const loginHref = `/login?verified=1${targetEmail ? `&email=${encodeURIComponent(targetEmail)}` : ""}${callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`;
+  const resendHref = `/reenvio-confirmacao${targetEmail ? `?email=${encodeURIComponent(targetEmail)}` : ""}${callbackUrl ? `${targetEmail ? "&" : "?"}callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`;
 
   return (
     <AuthCard
@@ -72,14 +75,14 @@ export default async function ConfirmarEmailPage({
         <div className="space-y-3">
           {result?.ok ? (
             <Link
-              href={`/login?verified=1${targetEmail ? `&email=${encodeURIComponent(targetEmail)}` : ""}`}
+              href={loginHref}
               className="block w-full rounded-xl bg-brand-red px-4 py-3 text-center font-semibold text-black transition hover:bg-brand-red-dark"
             >
               Ir para o login
             </Link>
           ) : (
             <Link
-              href={`/reenvio-confirmacao${targetEmail ? `?email=${encodeURIComponent(targetEmail)}` : ""}`}
+              href={resendHref}
               className="block w-full rounded-xl bg-brand-red px-4 py-3 text-center font-semibold text-black transition hover:bg-brand-red-dark"
             >
               Reenviar confirmacao

@@ -20,12 +20,16 @@ export default async function CadastroPage() {
     redirect("/dashboard");
   }
 
+  const googleEnabled = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+  );
+
   return (
     <AuthCard
       title="Criar conta"
       description="Seu cadastro fica pendente ate a confirmacao do e-mail."
     >
-      <RegisterForm />
+      <RegisterForm googleEnabled={googleEnabled} />
     </AuthCard>
   );
 }

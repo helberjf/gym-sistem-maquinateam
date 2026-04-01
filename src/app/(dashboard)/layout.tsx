@@ -53,11 +53,6 @@ export default async function DashboardLayout({
       visible: hasPermission(session.user.role, "viewClassSchedules"),
     },
     {
-      href: "/dashboard/presenca",
-      label: "Presenca",
-      visible: hasPermission(session.user.role, "viewAttendance"),
-    },
-    {
       href: "/dashboard/planos",
       label: "Planos",
       visible: hasPermission(session.user.role, "viewPlans"),
