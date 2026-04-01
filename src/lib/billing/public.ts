@@ -7,6 +7,8 @@ export type PublicPlanPeriodKey =
   | "annual"
   | "special";
 
+export type PublicFullPlanVariant = "standard" | "social" | null;
+
 export type PublicPlanCatalogItem = {
   id: string;
   slug: string;
@@ -24,6 +26,9 @@ export type PublicPlanCatalogItem = {
   periodLabel: string;
   badge: string | null;
   featured: boolean;
+  isFull: boolean;
+  fullVariant: PublicFullPlanVariant;
+  isRecommended: boolean;
 };
 
 export type PublicPlanSection = {
@@ -40,10 +45,42 @@ const SECTION_ORDER: PublicPlanPeriodKey[] = [
   "special",
 ];
 
-function resolvePlanPeriod(months: number): {
+function resolveFullPlanVariant(input: {
+  name: string;
+  slug: string;
+}): PublicFullPlanVariant {
+  const normalizedPlan = `${input.name} ${input.slug}`.toLowerCase();
+
+  if (!normalizedPlan.includes("full")) {
+    return null;
+  }
+
+  if (
+    normalizedPlan.includes("desconto") ||
+    normalizedPlan.includes("social")
+  ) {
+    return "social";
+  }
+
+  return "standard";
+}
+
+function resolvePlanPeriod(input: {
+  billingIntervalMonths: number;
+  name: string;
+  slug: string;
+}): {
   key: PublicPlanPeriodKey;
   label: string;
 } {
+  const normalizedPlan = `${input.name} ${input.slug}`.toLowerCase();
+
+  if (normalizedPlan.includes("full")) {
+    return { key: "special", label: "Plano Full" };
+  }
+
+  const months = input.billingIntervalMonths;
+
   if (months === 1) {
     return { key: "monthly", label: "Mensal" };
   }
@@ -64,16 +101,33 @@ function resolvePlanPeriod(months: number): {
 }
 
 function resolvePlanBadge(input: {
+  name: string;
+  slug: string;
   billingIntervalMonths: number;
   sessionsPerWeek: number | null;
   isUnlimited: boolean;
+  priceCents: number;
 }) {
-  if (input.isUnlimited) {
-    return "ILIMITADO";
+  const normalizedPlan = `${input.name} ${input.slug}`.toLowerCase();
+  const fullVariant = resolveFullPlanVariant(input);
+
+  if (fullVariant === "social") {
+    return "CONDICAO ESPECIAL";
+  }
+
+  if (fullVariant === "standard") {
+    return "PLANO COMPLETO";
   }
 
   if (input.billingIntervalMonths >= 12) {
-    return "LONGO PRAZO";
+    return "MAIS ECONOMICO";
+  }
+
+  if (
+    input.billingIntervalMonths === 1 &&
+    (input.sessionsPerWeek ?? 0) >= 3
+  ) {
+    return "MAIS";
   }
 
   if ((input.sessionsPerWeek ?? 0) >= 3) {
@@ -112,7 +166,15 @@ function mapPlanToPublicCard(plan: {
   isUnlimited: boolean;
   enrollmentFeeCents: number;
 }) {
-  const period = resolvePlanPeriod(plan.billingIntervalMonths);
+  const fullVariant = resolveFullPlanVariant({
+    name: plan.name,
+    slug: plan.slug,
+  });
+  const period = resolvePlanPeriod({
+    billingIntervalMonths: plan.billingIntervalMonths,
+    name: plan.name,
+    slug: plan.slug,
+  });
   const referenceMonths = Math.max(
     1,
     plan.durationMonths ?? plan.billingIntervalMonths,
@@ -133,8 +195,18 @@ function mapPlanToPublicCard(plan: {
     isUnlimited: plan.isUnlimited,
     periodKey: period.key,
     periodLabel: period.label,
-    badge: resolvePlanBadge(plan),
+    badge: resolvePlanBadge({
+      name: plan.name,
+      slug: plan.slug,
+      billingIntervalMonths: plan.billingIntervalMonths,
+      sessionsPerWeek: plan.sessionsPerWeek,
+      isUnlimited: plan.isUnlimited,
+      priceCents: plan.priceCents,
+    }),
     featured: resolvePlanFeatured(plan),
+    isFull: fullVariant !== null,
+    fullVariant,
+    isRecommended: fullVariant === "standard",
   } satisfies PublicPlanCatalogItem;
 }
 
@@ -189,14 +261,65 @@ export async function getPublicPlanSections() {
 
 export async function getFeaturedPublicPlans(limit = 3) {
   const plans = await getPublicPlansCatalog();
+  const ordered = [...plans].sort((left, right) => {
+    if (left.isRecommended !== right.isRecommended) {
+      return Number(right.isRecommended) - Number(left.isRecommended);
+    }
 
-  return plans
-    .sort((left, right) => {
-      if (left.featured !== right.featured) {
-        return Number(right.featured) - Number(left.featured);
+    if (left.isFull !== right.isFull) {
+      return Number(right.isFull) - Number(left.isFull);
+    }
+
+    if (left.featured !== right.featured) {
+      return Number(right.featured) - Number(left.featured);
+    }
+
+    if (left.billingIntervalMonths !== right.billingIntervalMonths) {
+      return right.billingIntervalMonths - left.billingIntervalMonths;
+    }
+
+    if ((left.sessionsPerWeek ?? 0) !== (right.sessionsPerWeek ?? 0)) {
+      return (right.sessionsPerWeek ?? 0) - (left.sessionsPerWeek ?? 0);
+    }
+
+    return left.priceCents - right.priceCents;
+  });
+
+  const selected: PublicPlanCatalogItem[] = [];
+
+  for (const plan of ordered) {
+    if (selected.length >= limit) {
+      break;
+    }
+
+    if (!plan.featured && !plan.isRecommended) {
+      continue;
+    }
+
+    if (plan.isFull && selected.some((item) => item.isFull)) {
+      continue;
+    }
+
+    selected.push(plan);
+  }
+
+  if (selected.length < limit) {
+    for (const plan of ordered) {
+      if (selected.length >= limit) {
+        break;
       }
 
-      return left.priceCents - right.priceCents;
-    })
-    .slice(0, limit);
+      if (selected.some((item) => item.id === plan.id)) {
+        continue;
+      }
+
+      if (plan.isFull && selected.some((item) => item.isFull)) {
+        continue;
+      }
+
+      selected.push(plan);
+    }
+  }
+
+  return selected.slice(0, limit);
 }

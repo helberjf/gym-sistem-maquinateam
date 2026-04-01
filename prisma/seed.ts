@@ -23,26 +23,6 @@ function addMonths(date: Date, amount: number): Date {
   return value;
 }
 
-function atTime(date: Date, hours: number, minutes: number): Date {
-  const value = new Date(date);
-  value.setHours(hours, minutes, 0, 0);
-  return value;
-}
-
-function previousWeekday(weekday: number, weeksAgo = 0): Date {
-  const value = startOfDay(new Date());
-  const currentWeekday = value.getDay();
-  let diff = currentWeekday - weekday;
-
-  if (diff < 0) {
-    diff += 7;
-  }
-
-  value.setDate(value.getDate() - diff - weeksAgo * 7);
-
-  return value;
-}
-
 function slugify(value: string): string {
   return value
     .normalize("NFD")
@@ -532,16 +512,33 @@ async function main() {
   const plans = await Promise.all([
     prisma.plan.create({
       data: {
-        name: "Boxe 2x por semana",
-        slug: "boxe-2x-semana",
-        description: "Plano mensal com duas aulas semanais de boxe.",
+        name: "Mensal 1x na Semana",
+        slug: "mensal-1x-na-semana",
+        description: "Plano mensal para manter constancia com uma aula por semana.",
         benefits: [
-          "2 aulas tecnicas por semana",
-          "Acesso ao treino de fundamentos",
-          "Acompanhamento basico de evolucao",
+          "1 treino por semana",
+          "Acesso ao app do aluno",
+          "Acompanhamento basico da equipe",
         ],
-        modalityId: modalityMap["boxe"].id,
-        priceCents: 18900,
+        modalityId: null,
+        priceCents: 12900,
+        billingIntervalMonths: 1,
+        durationMonths: 1,
+        sessionsPerWeek: 1,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Mensal 2x na Semana",
+        slug: "mensal-2x-na-semana",
+        description: "Plano mensal para evoluir tecnica e condicionamento com duas aulas por semana.",
+        benefits: [
+          "2 treinos por semana",
+          "App com historico e pagamentos",
+          "Rotina forte de evolucao",
+        ],
+        modalityId: null,
+        priceCents: 15900,
         billingIntervalMonths: 1,
         durationMonths: 1,
         sessionsPerWeek: 2,
@@ -549,16 +546,135 @@ async function main() {
     }),
     prisma.plan.create({
       data: {
-        name: "Muay Thai Ilimitado",
-        slug: "muay-thai-ilimitado",
-        description: "Plano mensal ilimitado para as turmas de Muay Thai.",
+        name: "Mensal 3x na Semana",
+        slug: "mensal-3x-na-semana",
+        description: "Plano mensal para acelerar a evolucao com tres aulas por semana.",
         benefits: [
-          "Acesso ilimitado as turmas da modalidade",
-          "Participacao em auloes tecnicos",
-          "Condicionamento complementar de luta",
+          "3 treinos por semana",
+          "Melhor custo-beneficio do mensal",
+          "Mais intensidade na rotina",
         ],
-        modalityId: modalityMap["muay-thai"].id,
-        priceCents: 22900,
+        modalityId: null,
+        priceCents: 17900,
+        billingIntervalMonths: 1,
+        durationMonths: 1,
+        sessionsPerWeek: 3,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Semestral 1x na Semana",
+        slug: "semestral-1x-na-semana",
+        description: "Plano de 6 meses para manter constancia com economia mensal.",
+        benefits: [
+          "1 treino por semana",
+          "Total de R$ 714,00 no periodo",
+          "Melhor valor que o mensal",
+        ],
+        modalityId: null,
+        priceCents: 71400,
+        billingIntervalMonths: 6,
+        durationMonths: 6,
+        sessionsPerWeek: 1,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Semestral 2x na Semana",
+        slug: "semestral-2x-na-semana",
+        description: "Plano de 6 meses para manter ritmo forte e previsibilidade.",
+        benefits: [
+          "2 treinos por semana",
+          "Total de R$ 858,00 no periodo",
+          "Compromisso de medio prazo",
+        ],
+        modalityId: null,
+        priceCents: 85800,
+        billingIntervalMonths: 6,
+        durationMonths: 6,
+        sessionsPerWeek: 2,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Semestral 3x na Semana",
+        slug: "semestral-3x-na-semana",
+        description: "Plano de 6 meses para quem quer treinar serio e colher resultado.",
+        benefits: [
+          "3 treinos por semana",
+          "Total de R$ 978,00 no periodo",
+          "Ritmo forte de evolucao",
+        ],
+        modalityId: null,
+        priceCents: 97800,
+        billingIntervalMonths: 6,
+        durationMonths: 6,
+        sessionsPerWeek: 3,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Anual 1x na Semana",
+        slug: "anual-1x-na-semana",
+        description: "Plano anual com a menor mensalidade da grade para manter constancia.",
+        benefits: [
+          "1 treino por semana",
+          "Total de R$ 1.308,00 no periodo",
+          "Maior economia no longo prazo",
+        ],
+        modalityId: null,
+        priceCents: 130800,
+        billingIntervalMonths: 12,
+        durationMonths: 12,
+        sessionsPerWeek: 1,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Anual 2x na Semana",
+        slug: "anual-2x-na-semana",
+        description: "Plano anual equilibrado para tecnica, cardio e consistencia.",
+        benefits: [
+          "2 treinos por semana",
+          "Total de R$ 1.428,00 no periodo",
+          "Valor mensal mais competitivo",
+        ],
+        modalityId: null,
+        priceCents: 142800,
+        billingIntervalMonths: 12,
+        durationMonths: 12,
+        sessionsPerWeek: 2,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Anual 3x na Semana",
+        slug: "anual-3x-na-semana",
+        description: "Plano anual premium para acelerar evolucao com a melhor relacao custo-frequencia.",
+        benefits: [
+          "3 treinos por semana",
+          "Total de R$ 1.788,00 no periodo",
+          "Plano premium da grade publica",
+        ],
+        modalityId: null,
+        priceCents: 178800,
+        billingIntervalMonths: 12,
+        durationMonths: 12,
+        sessionsPerWeek: 3,
+      },
+    }),
+    prisma.plan.create({
+      data: {
+        name: "Plano Full",
+        slug: "plano-full",
+        description: "Qualquer dia e qualquer horario para quem quer viver a rotina completa da academia.",
+        benefits: [
+          "Treinos ilimitados",
+          "Qualquer dia e qualquer horario",
+          "Acesso completo a uma arte marcial",
+        ],
+        modalityId: null,
+        priceCents: 25000,
         billingIntervalMonths: 1,
         durationMonths: 1,
         isUnlimited: true,
@@ -566,19 +682,19 @@ async function main() {
     }),
     prisma.plan.create({
       data: {
-        name: "Fight Pass Trimestral",
-        slug: "fight-pass-trimestral",
-        description: "Plano trimestral para combinar turmas de trocação e funcional.",
+        name: "Plano Full Desconto Social",
+        slug: "plano-full-desconto-social",
+        description: "Siga nossos perfis, avalie a academia e consulte a equipe antes de contratar essa condicao especial.",
         benefits: [
-          "Acesso livre a modalidades de trocacao",
-          "Funcional fighter incluso",
-          "Condicao comercial para contrato trimestral",
+          "Treinos ilimitados",
+          "Condicao social especial",
+          "Consulte a equipe antes de contratar",
         ],
-        priceCents: 59900,
-        billingIntervalMonths: 3,
-        durationMonths: 3,
+        modalityId: null,
+        priceCents: 18500,
+        billingIntervalMonths: 1,
+        durationMonths: 1,
         isUnlimited: true,
-        enrollmentFeeCents: 4900,
       },
     }),
   ]);
@@ -589,40 +705,40 @@ async function main() {
     prisma.subscription.create({
       data: {
         studentProfileId: aliceUser.studentProfile!.id,
-        planId: planMap["boxe-2x-semana"].id,
+        planId: planMap["mensal-3x-na-semana"].id,
         status: "ACTIVE",
         startDate: addMonths(baseDay, -1),
-        endDate: baseDay,
+        endDate: addDays(baseDay, 5),
         renewalDay: 5,
         autoRenew: true,
-        priceCents: 18900,
+        priceCents: 17900,
         createdByUserId: receptionUser.id,
-        notes: "Assinatura renovada automaticamente via PIX.",
+        notes: "Assinatura mensal mais escolhida renovada via PIX.",
       },
     }),
     prisma.subscription.create({
       data: {
         studentProfileId: brunoUser.studentProfile!.id,
-        planId: planMap["muay-thai-ilimitado"].id,
+        planId: planMap["semestral-2x-na-semana"].id,
         status: "ACTIVE",
         startDate: addMonths(baseDay, -1),
-        endDate: baseDay,
-        renewalDay: 10,
+        endDate: addMonths(baseDay, 5),
+        renewalDay: null,
         autoRenew: false,
-        priceCents: 22900,
+        priceCents: 85800,
         createdByUserId: receptionUser.id,
       },
     }),
     prisma.subscription.create({
       data: {
         studentProfileId: camilaUser.studentProfile!.id,
-        planId: planMap["fight-pass-trimestral"].id,
+        planId: planMap["plano-full-desconto-social"].id,
         status: "PAST_DUE",
         startDate: addMonths(baseDay, -1),
-        endDate: addMonths(baseDay, 2),
+        endDate: baseDay,
         autoRenew: false,
-        priceCents: 59900,
-        discountCents: 5000,
+        priceCents: 18500,
+        discountCents: 0,
         createdByUserId: receptionUser.id,
         notes: "Plano convertido do período trial e aguardando regularização.",
       },
@@ -638,14 +754,14 @@ async function main() {
       data: {
         studentProfileId: aliceUser.studentProfile!.id,
         subscriptionId: subscriptionMap[aliceUser.studentProfile!.id].id,
-        amountCents: 18900,
+        amountCents: 17900,
         status: "PAID",
         method: "PIX",
         dueDate: addMonths(baseDay, -1),
         paidAt: addDays(baseDay, -24),
         externalReference: "SUB-ALICE-2026-03",
         gatewayTransactionId: "MP-ALICE-202603",
-        description: "Mensalidade Boxe 2x por semana",
+        description: "Mensalidade Mensal 3x na Semana",
         createdByUserId: receptionUser.id,
         processedByUserId: receptionUser.id,
       },
@@ -654,7 +770,7 @@ async function main() {
       data: {
         studentProfileId: aliceUser.studentProfile!.id,
         subscriptionId: subscriptionMap[aliceUser.studentProfile!.id].id,
-        amountCents: 18900,
+        amountCents: 17900,
         status: "PENDING",
         method: "PIX",
         dueDate: addDays(baseDay, 5),
@@ -667,14 +783,14 @@ async function main() {
       data: {
         studentProfileId: brunoUser.studentProfile!.id,
         subscriptionId: subscriptionMap[brunoUser.studentProfile!.id].id,
-        amountCents: 22900,
+        amountCents: 85800,
         status: "PAID",
         method: "CREDIT_CARD",
         dueDate: addMonths(baseDay, -1),
         paidAt: addDays(baseDay, -18),
         externalReference: "SUB-BRUNO-2026-03",
         gatewayTransactionId: "MP-BRUNO-202603",
-        description: "Mensalidade Muay Thai Ilimitado",
+        description: "Plano Semestral 2x na Semana",
         createdByUserId: receptionUser.id,
         processedByUserId: adminUser.id,
       },
@@ -683,50 +799,14 @@ async function main() {
       data: {
         studentProfileId: camilaUser.studentProfile!.id,
         subscriptionId: subscriptionMap[camilaUser.studentProfile!.id].id,
-        amountCents: 54900,
+        amountCents: 18500,
         status: "PENDING",
-        method: "BOLETO",
+        method: "PIX",
         dueDate: addDays(baseDay, -3),
-        externalReference: "SUB-CAMILA-2026-Q2",
-        description: "Plano Fight Pass Trimestral",
+        externalReference: "SUB-CAMILA-2026-04",
+        description: "Plano Full Desconto Social",
         notes: "Boleto venceu sem compensação bancária.",
         createdByUserId: receptionUser.id,
-      },
-    }),
-  ]);
-
-  await Promise.all([
-    prisma.attendance.create({
-      data: {
-        studentProfileId: aliceUser.studentProfile!.id,
-        classScheduleId: classScheduleMap["Boxe Adulto - Segunda"].id,
-        classDate: previousWeekday(1),
-        status: "CHECKED_OUT",
-        checkedInAt: atTime(previousWeekday(1), 18, 55),
-        checkedOutAt: atTime(previousWeekday(1), 20, 5),
-        notes: "Treino completo com foco em jab, cruzado e deslocamento.",
-        checkedInByUserId: receptionUser.id,
-        checkedOutByUserId: teacherUser.id,
-      },
-    }),
-    prisma.attendance.create({
-      data: {
-        studentProfileId: brunoUser.studentProfile!.id,
-        classScheduleId: classScheduleMap["Muay Thai Noite - Terça"].id,
-        classDate: previousWeekday(2),
-        status: "CHECKED_IN",
-        checkedInAt: atTime(previousWeekday(2), 19, 53),
-        notes: "Aluno ainda em treino no momento do registro do seed.",
-        checkedInByUserId: receptionUser.id,
-      },
-    }),
-    prisma.attendance.create({
-      data: {
-        studentProfileId: camilaUser.studentProfile!.id,
-        classScheduleId: classScheduleMap["Kickboxing Intermediário - Quinta"].id,
-        classDate: previousWeekday(4, 1),
-        status: "NO_SHOW",
-        notes: "Faltou por conflito de agenda no período de experiência.",
       },
     }),
   ]);
@@ -1439,7 +1519,7 @@ async function main() {
         summary: "Assinatura mensal de Alice Nogueira criada pela recepção.",
         afterData: {
           studentRegistration: "ALU-001",
-          plan: "Boxe 2x por semana",
+          plan: "Mensal 3x na Semana",
           status: "ACTIVE",
         },
       },
@@ -1461,7 +1541,7 @@ async function main() {
         entityId: "SUB-ALICE-2026-03",
         summary: "Pagamento mensal de Alice confirmado via PIX.",
         afterData: {
-          amountCents: 18900,
+          amountCents: 17900,
           method: "PIX",
           status: "PAID",
         },
@@ -1511,7 +1591,6 @@ async function main() {
     enrollments: await prisma.classEnrollment.count(),
     subscriptions: await prisma.subscription.count(),
     payments: await prisma.payment.count(),
-    attendances: await prisma.attendance.count(),
     products: await prisma.product.count(),
     sales: await prisma.productSale.count(),
     shippingAddresses: await prisma.shippingAddress.count(),

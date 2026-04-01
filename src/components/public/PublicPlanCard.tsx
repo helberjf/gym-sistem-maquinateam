@@ -21,14 +21,18 @@ export function PublicPlanCard({
   const durationLabel = formatMonthsLabel(
     plan.durationMonths ?? plan.billingIntervalMonths,
   );
+  const badgeLabel = plan.isRecommended ? "RECOMENDADO" : plan.badge;
+  const isLightSurface = plan.featured || plan.isRecommended;
 
   return (
     <article
       className={[
         "flex h-full flex-col rounded-[2rem] border p-5 sm:p-6",
-        plan.featured
-          ? "border-white bg-white text-black shadow-[0_20px_80px_rgba(255,255,255,0.08)]"
-          : "border-brand-gray-mid bg-brand-gray-dark text-white",
+        plan.isRecommended
+          ? "border-[#e2b34d] bg-[linear-gradient(180deg,#fff6d9_0%,#ffffff_42%)] text-black shadow-[0_20px_80px_rgba(226,179,77,0.18)]"
+          : plan.featured
+            ? "border-white bg-white text-black shadow-[0_20px_80px_rgba(255,255,255,0.08)]"
+            : "border-brand-gray-mid bg-brand-gray-dark text-white",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-4">
@@ -36,23 +40,25 @@ export function PublicPlanCard({
           <p
             className={[
               "text-xs uppercase tracking-[0.24em]",
-              plan.featured ? "text-black/60" : "text-brand-gray-light",
+              isLightSurface ? "text-black/60" : "text-brand-gray-light",
             ].join(" ")}
           >
             {plan.periodLabel}
           </p>
-          <h3 className="mt-3 text-2xl font-bold uppercase sm:text-3xl">{plan.name}</h3>
+          <h3 className="mt-3 text-2xl font-bold uppercase sm:text-3xl">
+            {plan.name}
+          </h3>
         </div>
-        {plan.badge ? (
+        {badgeLabel ? (
           <span
             className={[
               "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
-              plan.featured
+              isLightSurface
                 ? "bg-black text-white"
                 : "border border-brand-gray-mid text-brand-gray-light",
             ].join(" ")}
           >
-            {plan.badge}
+            {badgeLabel}
           </span>
         ) : null}
       </div>
@@ -60,10 +66,11 @@ export function PublicPlanCard({
       <p
         className={[
           "mt-4 text-sm leading-6",
-          plan.featured ? "text-black/70" : "text-brand-gray-light",
+          isLightSurface ? "text-black/70" : "text-brand-gray-light",
         ].join(" ")}
       >
-        {plan.description ?? "Plano ativo para acompanhar treinos, pagamentos e evolucao no sistema da academia."}
+        {plan.description ??
+          "Plano ativo para acompanhar treinos, pagamentos e evolucao no sistema da academia."}
       </p>
 
       <div className="mt-6">
@@ -83,7 +90,7 @@ export function PublicPlanCard({
             : "por mes"}
         </p>
         <p className="mt-2 text-xs uppercase tracking-[0.18em] opacity-70">
-          {recurringLabel} • duracao {durationLabel}
+          {recurringLabel} | duracao {durationLabel}
         </p>
         <p className="mt-3 text-sm opacity-70">
           Cobranca do periodo: {formatCurrencyFromCents(plan.priceCents)}
@@ -96,12 +103,14 @@ export function PublicPlanCard({
       <ul
         className={[
           "mt-6 space-y-3 text-sm",
-          plan.featured ? "text-black/80" : "text-brand-gray-light",
+          isLightSurface ? "text-black/80" : "text-brand-gray-light",
         ].join(" ")}
       >
         {(plan.benefits ?? []).map((benefit) => (
           <li key={benefit} className="flex gap-3">
-            <span className={plan.featured ? "text-black" : "text-white"}>+</span>
+            <span className={isLightSurface ? "text-black" : "text-white"}>
+              +
+            </span>
             <span>{benefit}</span>
           </li>
         ))}
@@ -112,9 +121,10 @@ export function PublicPlanCard({
           planId={plan.id}
           isAuthenticated={isAuthenticated}
           callbackUrl={callbackUrl}
+          tone={isLightSurface ? "light" : "dark"}
           className={[
             "w-full",
-            plan.featured ? "bg-black text-white hover:bg-black/90" : "",
+            isLightSurface ? "bg-black text-white hover:bg-black/90" : "",
           ].join(" ")}
         />
       </div>

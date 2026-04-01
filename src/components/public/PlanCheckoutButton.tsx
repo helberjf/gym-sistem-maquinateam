@@ -11,6 +11,7 @@ type PlanCheckoutButtonProps = {
   callbackUrl?: string;
   className?: string;
   isAuthenticated: boolean;
+  tone?: "dark" | "light";
 };
 
 export function PlanCheckoutButton({
@@ -18,9 +19,24 @@ export function PlanCheckoutButton({
   callbackUrl = "/planos",
   className,
   isAuthenticated,
+  tone = "dark",
 }: PlanCheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PIX);
+  const optionToneClasses =
+    tone === "light"
+      ? {
+          selected:
+            "border-black bg-black text-white shadow-[0_12px_30px_rgba(0,0,0,0.12)]",
+          idle:
+            "border-black/10 bg-black/[0.03] text-black/75 hover:bg-black/[0.06]",
+        }
+      : {
+          selected:
+            "border-white bg-white text-black shadow-[0_12px_30px_rgba(255,255,255,0.08)]",
+          idle:
+            "border-brand-gray-mid bg-brand-black/30 text-brand-gray-light hover:border-white/25",
+        };
 
   async function handleCheckout() {
     setLoading(true);
@@ -90,8 +106,8 @@ export function PlanCheckoutButton({
             className={[
               "rounded-2xl border px-3 py-3 text-left transition",
               paymentMethod === option.value
-                ? "border-brand-white bg-brand-white/10 text-white"
-                : "border-brand-gray-mid bg-brand-black/30 text-brand-gray-light",
+                ? optionToneClasses.selected
+                : optionToneClasses.idle,
             ].join(" ")}
           >
             <span className="block text-sm font-semibold uppercase">{option.label}</span>
