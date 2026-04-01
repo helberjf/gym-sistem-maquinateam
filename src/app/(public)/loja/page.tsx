@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { SectionHeading } from "@/components/public/SectionHeading";
-import { StoreProductCard } from "@/components/store/StoreProductCard";
+import { Heart, ShoppingBag, TicketPercent, Truck } from "lucide-react";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { StoreProductCard } from "@/components/store/StoreProductCard";
+import { Button } from "@/components/ui/Button";
 import { flattenSearchParams } from "@/lib/academy/presentation";
-import { BRAND } from "@/lib/constants/brand";
+import { formatCurrencyFromCents } from "@/lib/billing/constants";
 import { getStoreCatalogData } from "@/lib/store/catalog";
 import { CATALOG_SORT_OPTIONS } from "@/lib/store/constants";
+import { getStoreFavoriteProductIds } from "@/lib/store/favorites";
 import { parseSearchParams } from "@/lib/validators";
 import { catalogFiltersSchema } from "@/lib/validators/store";
 
@@ -32,120 +33,118 @@ export default async function StorePage({
     catalogFiltersSchema,
   );
 
-  let storeUnavailable = false;
-  const emptyCatalogData = {
-    products: [],
-    categories: [],
-    summary: {
-      totalProducts: 0,
-      featuredProducts: 0,
-      inStockProducts: 0,
-    },
-  };
-
-  const data = await getStoreCatalogData(filters).catch((error) => {
-    storeUnavailable = true;
-    console.error("Falha ao carregar o catalogo publico da loja.", error);
-    return emptyCatalogData;
-  });
+  const [data, favoriteIds] = await Promise.all([
+    getStoreCatalogData(filters),
+    getStoreFavoriteProductIds(),
+  ]);
+  const favoriteIdSet = new Set(favoriteIds);
+  const fallbackMode = data.source === "fallback";
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <section className="rounded-[2.5rem] border border-brand-gray-mid bg-brand-gray-dark p-6 sm:p-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div>
-            <p className="text-xs uppercase tracking-[0.34em] text-brand-gray-light">
+    <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="rounded-[2.25rem] border border-neutral-200 bg-neutral-50 p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.34em] text-neutral-500">
               Loja da academia
             </p>
-            <h1 className="mt-4 text-4xl font-bold uppercase text-white sm:text-5xl">
-              Equipamentos e acessorios
+            <h1 className="mt-4 text-4xl font-semibold text-neutral-950 sm:text-5xl">
+              Produtos para treino e rotina
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-brand-gray-light sm:text-base">
-              Luvas, bandagens, caneleiras, camisetas e acessorios selecionados para
-              a rotina de treino da Maquina Team, com uma vitrine clean, forte e
-              integrada ao restante do sistema.
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600 sm:text-base">
+              Camisetas, luvas, bandagens, caneleiras e acessorios escolhidos para a
+              rotina da Maquina Team, com carrinho, cupom, frete e checkout
+              integrados ao sistema.
             </p>
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-brand-gray-mid bg-brand-black/40 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
-                  Catalogo
-                </p>
-                <p className="mt-3 text-3xl font-bold text-white">{data.summary.totalProducts}</p>
-              </div>
-              <div className="rounded-2xl border border-brand-gray-mid bg-brand-black/40 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
-                  Destaques
-                </p>
-                <p className="mt-3 text-3xl font-bold text-white">{data.summary.featuredProducts}</p>
-              </div>
-              <div className="rounded-2xl border border-brand-gray-mid bg-brand-black/40 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
-                  Em estoque
-                </p>
-                <p className="mt-3 text-3xl font-bold text-white">{data.summary.inStockProducts}</p>
-              </div>
-            </div>
           </div>
 
-          <div className="rounded-[2rem] border border-brand-gray-mid bg-brand-black/50 p-5">
-            <p className="text-xs uppercase tracking-[0.28em] text-brand-gray-light">
-              {storeUnavailable ? "Atendimento rapido" : "Compra integrada"}
-            </p>
-            <p className="mt-4 text-2xl font-bold uppercase text-white">
-              {storeUnavailable
-                ? "Catálogo em reconexao"
-                : "Carrinho server-side, cupom, frete e pedidos"}
-            </p>
-            <p className="mt-4 text-sm leading-7 text-brand-gray-light">
-              {storeUnavailable
-                ? "A vitrine publica esta sendo restabelecida neste ambiente. Enquanto isso, voce ainda pode falar com a equipe para reservar equipamentos e acessorios."
-                : "Monte o carrinho como visitante e finalize logado, com area do aluno, controle de estoque e pedidos conectados ao sistema interno."}
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              {storeUnavailable ? (
-                <>
-                  <Button asChild className="w-full sm:w-auto">
-                    <a
-                      href={BRAND.contact.whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Falar no WhatsApp
-                    </a>
-                  </Button>
-                  <Button asChild variant="secondary" className="w-full sm:w-auto">
-                    <Link href="/">Voltar ao inicio</Link>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button asChild className="w-full sm:w-auto">
-                    <Link href="/carrinho">Abrir carrinho</Link>
-                  </Button>
-                  <Button asChild variant="secondary" className="w-full sm:w-auto">
-                    <Link href="/dashboard/pedidos">Meus pedidos</Link>
-                  </Button>
-                </>
-              )}
-            </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Link
+              href="/favoritos"
+              className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-black"
+            >
+              <Heart className="h-4 w-4" />
+              <span>Meus Favoritos</span>
+            </Link>
+            <Link
+              href="/carrinho"
+              className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-black"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span>Ver carrinho</span>
+            </Link>
           </div>
         </div>
+
+        <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <article className="rounded-[1.75rem] border border-neutral-200 bg-white p-5">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+              <TicketPercent className="h-4 w-4" />
+              Cupom
+            </div>
+            <h2 className="mt-3 text-2xl font-semibold text-neutral-950">BEMVINDO10</h2>
+            <p className="mt-3 text-sm leading-6 text-neutral-600">
+              Primeira compra com 10% de desconto em itens elegiveis acima de{" "}
+              {formatCurrencyFromCents(12000)}. O cupom aparece no carrinho e no
+              checkout.
+            </p>
+          </article>
+
+          <article className="rounded-[1.75rem] border border-neutral-200 bg-white p-5">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+              <ShoppingBag className="h-4 w-4" />
+              Fluxo
+            </div>
+            <h2 className="mt-3 text-2xl font-semibold text-neutral-950">
+              Favoritos, carrinho e pedido
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-neutral-600">
+              Salve seus itens, monte o carrinho como visitante ou aluno e finalize
+              com pedido registrado dentro da area do cliente.
+            </p>
+          </article>
+
+          <article className="rounded-[1.75rem] border border-neutral-200 bg-white p-5">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+              <Truck className="h-4 w-4" />
+              Entrega
+            </div>
+            <h2 className="mt-3 text-2xl font-semibold text-neutral-950">
+              Retirada, entrega local ou envio
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-neutral-600">
+              Escolha frete no checkout com calculo interno preparado para evoluir
+              depois para transportadora real.
+            </p>
+          </article>
+        </div>
+
+        {fallbackMode ? (
+          <div className="mt-6 rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+              Modo vitrine
+            </p>
+            <p className="mt-2 text-sm leading-6 text-amber-900">
+              Este ambiente nao conseguiu carregar o catalogo principal agora, entao a
+              loja exibiu uma vitrine segura inspirada no seed. Assim que a conexao do
+              banco estabilizar, o modo completo volta automaticamente.
+            </p>
+          </div>
+        ) : null}
       </section>
 
-      <section className="mt-12 rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark p-5">
-        <form className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_repeat(5,minmax(0,1fr))]">
+      <section className="mt-6 rounded-[2rem] border border-neutral-200 bg-white p-5 shadow-sm">
+        <form className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.25fr)_repeat(5,minmax(0,1fr))]">
           <input
             name="q"
             defaultValue={filters.q ?? ""}
             placeholder="Busque por nome, categoria ou descricao"
-            className="rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
-            disabled={storeUnavailable}
+            className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-black"
           />
           <select
             name="category"
             defaultValue={filters.category ?? ""}
-            className="rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
-            disabled={storeUnavailable}
+            className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-black"
           >
             <option value="">Todas as categorias</option>
             {data.categories.map((category) => (
@@ -161,8 +160,7 @@ export default async function StorePage({
             step="1"
             defaultValue={filters.priceMin ?? ""}
             placeholder="Preco min."
-            className="rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
-            disabled={storeUnavailable}
+            className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-black"
           />
           <input
             name="priceMax"
@@ -171,14 +169,12 @@ export default async function StorePage({
             step="1"
             defaultValue={filters.priceMax ?? ""}
             placeholder="Preco max."
-            className="rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
-            disabled={storeUnavailable}
+            className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-black"
           />
           <select
             name="availability"
             defaultValue={filters.availability}
-            className="rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
-            disabled={storeUnavailable}
+            className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-black"
           >
             <option value="all">Toda disponibilidade</option>
             <option value="in_stock">Somente em estoque</option>
@@ -187,8 +183,7 @@ export default async function StorePage({
           <select
             name="sort"
             defaultValue={filters.sort}
-            className="rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
-            disabled={storeUnavailable}
+            className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-black"
           >
             {CATALOG_SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -196,55 +191,57 @@ export default async function StorePage({
               </option>
             ))}
           </select>
-          <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              variant="secondary"
-              className="w-full"
-              disabled={storeUnavailable}
-            >
+          <div className="flex items-center gap-3 xl:col-start-6">
+            <Button type="submit" variant="secondary" className="w-full border-neutral-300 text-neutral-900 hover:bg-neutral-100">
               Filtrar
             </Button>
-            <Button asChild variant="ghost" className="w-full">
+            <Button asChild variant="ghost" className="w-full text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900">
               <Link href="/loja">Limpar</Link>
             </Button>
           </div>
         </form>
       </section>
 
-      <section className="mt-14">
-        <SectionHeading
-          eyebrow="Catalogo"
-          title="Compre seus produtos"
-          description="Visual premium, checkout consistente e produtos escolhidos para a rotina de luta."
-        />
-
-        {storeUnavailable ? (
-          <div className="mt-10">
-            <EmptyState
-              title="Catalogo temporariamente indisponivel"
-              description="A pagina da loja continua no ar, mas o catalogo ainda nao conseguiu carregar neste ambiente. Assim que a conexao estabilizar, os produtos voltam a aparecer aqui."
-              actionLabel="Voltar ao inicio"
-              actionHref="/"
-            />
-          </div>
-        ) : data.products.length === 0 ? (
-          <div className="mt-10">
-            <EmptyState
-              title="Nenhum produto encontrado"
-              description="Ajuste os filtros para localizar outros itens da loja."
-              actionLabel="Limpar filtros"
-              actionHref="/loja"
-            />
-          </div>
-        ) : (
-          <div className="mt-10 grid grid-cols-1 gap-5 xl:grid-cols-3">
-            {data.products.map((product) => (
-              <StoreProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
+      <section className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-neutral-500">
+            Catalogo
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
+            {data.summary.totalProducts} produto(s) visivel(is)
+          </h2>
+        </div>
+        <div className="flex flex-wrap gap-3 text-sm text-brand-gray-light">
+          <span className="rounded-full border border-brand-gray-mid px-4 py-2">
+            {data.summary.featuredProducts} destaque(s)
+          </span>
+          <span className="rounded-full border border-brand-gray-mid px-4 py-2">
+            {data.summary.inStockProducts} em estoque
+          </span>
+        </div>
       </section>
+
+      {data.products.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState
+            title="Nenhum produto encontrado"
+            description="Ajuste os filtros para localizar outros itens da loja."
+            actionLabel="Limpar filtros"
+            actionHref="/loja"
+          />
+        </div>
+      ) : (
+        <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {data.products.map((product) => (
+            <StoreProductCard
+              key={product.id}
+              product={product}
+              initialIsFavorite={favoriteIdSet.has(product.id)}
+              interactiveEnabled={!fallbackMode}
+            />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

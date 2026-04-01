@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TicketPercent, Truck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/public/SectionHeading";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { StoreProductCard } from "@/components/store/StoreProductCard";
 import { AddToCartButton } from "@/components/store/AddToCartButton";
+import { StoreFavoriteButton } from "@/components/store/StoreFavoriteButton";
+import { StoreProductGallery } from "@/components/store/StoreProductGallery";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
+import { getStoreFavoriteProductIds } from "@/lib/store/favorites";
 import { getStoreProductDetail } from "@/lib/store/catalog";
 
 type RouteParams = Promise<{ slug: string }>;
@@ -42,82 +45,83 @@ export default async function StoreProductDetailPage({
 }) {
   try {
     const { slug } = await params;
-    const data = await getStoreProductDetail(slug);
+    const [data, favoriteIds] = await Promise.all([
+      getStoreProductDetail(slug),
+      getStoreFavoriteProductIds(),
+    ]);
+    const favoriteIdSet = new Set(favoriteIds);
     const soldOut = data.product.trackInventory && data.product.stockQuantity <= 0;
+    const interactiveEnabled = data.source === "live";
 
     return (
-      <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Button asChild variant="ghost">
-            <Link href="/loja">Voltar para a loja</Link>
-          </Button>
+      <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center gap-3 text-sm text-brand-gray-light">
+          <Link href="/loja" className="hover:text-white">
+            Loja
+          </Link>
+          <span>/</span>
+          <span>{data.product.category}</span>
         </div>
 
-        <section className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark">
-              {data.product.images[0] ? (
-                <img
-                  src={data.product.images[0].url}
-                  alt={data.product.images[0].altText ?? data.product.name}
-                  className="aspect-[4/3] w-full object-cover grayscale"
-                />
-              ) : (
-                <div className="flex aspect-[4/3] items-center justify-center text-sm text-brand-gray-light">
-                  Sem imagem principal
-                </div>
-              )}
-            </div>
-
-            {data.product.images.length > 1 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {data.product.images.slice(1).map((image) => (
-                  <div
-                    key={image.id}
-                    className="overflow-hidden rounded-2xl border border-brand-gray-mid bg-brand-gray-dark"
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.altText ?? data.product.name}
-                      className="aspect-[4/3] w-full object-cover grayscale"
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : null}
+        <section className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+          <div>
+            <StoreProductGallery
+              productName={data.product.name}
+              images={data.product.images}
+            />
           </div>
 
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge tone="info">{data.product.category}</StatusBadge>
-              {data.product.featured ? <StatusBadge tone="success">Destaque</StatusBadge> : null}
-              {soldOut ? <StatusBadge tone="danger">Esgotado</StatusBadge> : null}
+          <div className="rounded-[2.25rem] border border-neutral-200 bg-neutral-50 p-6 shadow-sm sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-600">
+                  {data.product.category}
+                </span>
+                {data.product.featured ? (
+                  <span className="rounded-full bg-black px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+                    Destaque
+                  </span>
+                ) : null}
+                {soldOut ? (
+                  <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-red-700">
+                    Esgotado
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <StoreFavoriteButton
+                  productId={data.product.id}
+                  productName={data.product.name}
+                  initialIsFavorite={favoriteIdSet.has(data.product.id)}
+                  variant="inline"
+                  disabled={!interactiveEnabled}
+                />
+                <Button asChild variant="secondary" className="border-neutral-300 text-neutral-900 hover:bg-neutral-100">
+                  <Link href="/carrinho">Carrinho</Link>
+                </Button>
+              </div>
             </div>
 
-            <div>
-              <p className="text-xs uppercase tracking-[0.34em] text-brand-gray-light">
-                Loja da academia
-              </p>
-              <h1 className="mt-3 text-4xl font-bold uppercase text-white sm:text-5xl">
-                {data.product.name}
-              </h1>
-              <p className="mt-4 text-base leading-7 text-brand-gray-light">
-                {data.product.shortDescription ??
-                  "Produto selecionado para a rotina de treino, compra e reposicao dentro da Maquina Team."}
-              </p>
-            </div>
+            <h1 className="mt-5 text-4xl font-semibold text-neutral-950 sm:text-5xl">
+              {data.product.name}
+            </h1>
+            <p className="mt-4 text-base leading-8 text-neutral-600">
+              {data.product.shortDescription ??
+                "Produto selecionado para a rotina de treino, compra e reposicao dentro da Maquina Team."}
+            </p>
 
-            <div className="rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark p-5">
-              <div className="flex items-start justify-between gap-4">
+            <div className="mt-6 rounded-[1.75rem] border border-neutral-200 bg-white p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
                     Preco
                   </p>
-                  <p className="mt-2 text-4xl font-bold text-white">
+                  <p className="mt-2 text-4xl font-semibold text-neutral-950">
                     {formatCurrencyFromCents(data.product.priceCents)}
                   </p>
                 </div>
-                <div className="text-right text-sm text-brand-gray-light">
+                <div className="text-sm text-neutral-600 sm:text-right">
                   <p>SKU {data.product.sku}</p>
                   <p className="mt-1">
                     {data.product.trackInventory
@@ -128,53 +132,101 @@ export default async function StoreProductDetailPage({
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <AddToCartButton
-                  productId={data.product.id}
-                  className="w-full"
-                  label={soldOut ? "Produto indisponivel" : "Adicionar ao carrinho"}
-                  disabled={soldOut}
-                />
-                <Button asChild variant="secondary" size="lg" className="w-full">
-                  <Link href="/carrinho">Ir para o carrinho</Link>
+                {interactiveEnabled ? (
+                  <AddToCartButton
+                    productId={data.product.id}
+                    className="w-full"
+                    label={soldOut ? "Produto indisponivel" : "Adicionar ao carrinho"}
+                    disabled={soldOut}
+                  />
+                ) : (
+                  <div className="inline-flex items-center justify-center rounded-2xl border border-dashed border-neutral-300 px-6 py-3 text-sm font-medium text-neutral-500">
+                    Compra online volta com o banco
+                  </div>
+                )}
+                <Button asChild variant="secondary" className="w-full border-neutral-300 text-neutral-900 hover:bg-neutral-100">
+                  <Link href="/loja">Continuar comprando</Link>
                 </Button>
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark p-5">
-              <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
+            {data.source === "fallback" ? (
+              <div className="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+                  Modo vitrine
+                </p>
+                <p className="mt-2 text-sm leading-6 text-amber-900">
+                  Este produto esta aparecendo pela vitrine de contingencia. Assim que
+                  a conexao do catalogo principal estabilizar, favoritos, carrinho e
+                  checkout voltam a operar daqui normalmente.
+                </p>
+              </div>
+            ) : null}
+
+            <div className="mt-5 rounded-[1.75rem] border border-neutral-200 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
                 Descricao completa
               </p>
-              <p className="mt-4 text-sm leading-7 text-brand-gray-light">
+              <p className="mt-4 text-sm leading-7 text-neutral-600">
                 {data.product.description ??
                   "Produto com curadoria da academia para treinos, rotina tecnica e reposicao de equipamento no dia a dia."}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-brand-gray-mid bg-brand-gray-dark p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-gray-light">
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <article className="rounded-[1.5rem] border border-neutral-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
                   Peso
                 </p>
-                <p className="mt-3 text-xl font-bold text-white">
+                <p className="mt-3 text-xl font-semibold text-neutral-950">
                   {data.product.weightGrams ? `${data.product.weightGrams} g` : "Nao informado"}
                 </p>
-              </div>
-              <div className="rounded-2xl border border-brand-gray-mid bg-brand-gray-dark p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-gray-light">
+              </article>
+              <article className="rounded-[1.5rem] border border-neutral-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
                   Dimensoes
                 </p>
-                <p className="mt-3 text-xl font-bold text-white">
+                <p className="mt-3 text-xl font-semibold text-neutral-950">
                   {data.product.heightCm && data.product.widthCm && data.product.lengthCm
-                    ? `${data.product.heightCm} x ${data.product.widthCm} x ${data.product.lengthCm}`
+                    ? `${data.product.heightCm} x ${data.product.widthCm} x ${data.product.lengthCm} cm`
                     : "Nao informado"}
                 </p>
-              </div>
-              <div className="rounded-2xl border border-brand-gray-mid bg-brand-gray-dark p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-gray-light">
+              </article>
+              <article className="rounded-[1.5rem] border border-neutral-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
                   Entrega
                 </p>
-                <p className="mt-3 text-xl font-bold text-white">Pickup, local ou envio</p>
-              </div>
+                <p className="mt-3 text-xl font-semibold text-neutral-950">
+                  Pickup, local ou envio
+                </p>
+              </article>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <article className="rounded-[1.5rem] border border-neutral-200 bg-white p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                  <TicketPercent className="h-4 w-4" />
+                  Cupom
+                </div>
+                <p className="mt-3 text-lg font-semibold text-neutral-950">BEMVINDO10</p>
+                <p className="mt-2 text-sm leading-6 text-neutral-600">
+                  Aplique no carrinho para desconto de boas-vindas na primeira compra
+                  elegivel.
+                </p>
+              </article>
+              <article className="rounded-[1.5rem] border border-neutral-200 bg-white p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                  <Truck className="h-4 w-4" />
+                  Frete
+                </div>
+                <p className="mt-3 text-lg font-semibold text-neutral-950">
+                  Checkout com escolha de entrega
+                </p>
+                <p className="mt-2 text-sm leading-6 text-neutral-600">
+                  Retirada na academia, entrega local e envio padrao com composicao no
+                  total do pedido.
+                </p>
+              </article>
             </div>
           </div>
         </section>
@@ -186,9 +238,14 @@ export default async function StoreProductDetailPage({
               title="Outros produtos da mesma linha"
               description="Continue montando seu kit com itens da mesma categoria."
             />
-            <div className="mt-10 grid grid-cols-1 gap-5 xl:grid-cols-4">
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {data.relatedProducts.map((product) => (
-                <StoreProductCard key={product.id} product={product} />
+                <StoreProductCard
+                  key={product.id}
+                  product={product}
+                  initialIsFavorite={favoriteIdSet.has(product.id)}
+                  interactiveEnabled={data.source === "live"}
+                />
               ))}
             </div>
           </section>

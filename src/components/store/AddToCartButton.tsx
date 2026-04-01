@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -8,9 +9,11 @@ import { Button } from "@/components/ui/Button";
 type AddToCartButtonProps = {
   productId: string;
   className?: string;
-  label?: string;
+  label?: ReactNode;
   redirectToCart?: boolean;
   disabled?: boolean;
+  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
 };
 
 export function AddToCartButton({
@@ -19,6 +22,8 @@ export function AddToCartButton({
   label = "Adicionar ao carrinho",
   redirectToCart = false,
   disabled = false,
+  size = "lg",
+  variant = "primary",
 }: AddToCartButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -68,7 +73,8 @@ export function AddToCartButton({
   return (
     <Button
       type="button"
-      size="lg"
+      size={size}
+      variant={variant}
       loading={loading}
       disabled={disabled}
       className={className}
