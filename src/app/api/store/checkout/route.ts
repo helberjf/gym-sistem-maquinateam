@@ -1,4 +1,4 @@
-import { requireApiPermission } from "@/lib/permissions";
+import { getOptionalSession } from "@/lib/auth/session";
 import { createStoreCheckoutSession } from "@/lib/store/orders";
 import { handleRouteError, successResponse } from "@/lib/errors";
 import {
@@ -14,17 +14,22 @@ export async function POST(request: Request) {
   let rateLimitHeaders: Headers | undefined;
 
   try {
-    const session = await requireApiPermission("viewStoreOrders");
+    const session = await getOptionalSession();
     const input = await parseJsonBody(request, checkoutSchema);
     const rateLimit = await enforceRateLimit({
       request,
       limiter: mutationLimiter,
-      keyParts: [session.user.id, "store-checkout", input.deliveryMethod],
+      keyParts: [
+        session?.user?.id ?? "guest",
+        "store-checkout",
+        input.deliveryMethod,
+        input.paymentMethod,
+      ],
     });
     rateLimitHeaders = rateLimit.headers;
 
     const checkout = await createStoreCheckoutSession(input, {
-      userId: session.user.id,
+      userId: session?.user?.id ?? null,
       request,
     });
 

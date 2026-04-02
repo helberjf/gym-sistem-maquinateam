@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 
@@ -83,35 +84,43 @@ export function CartItemControls({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={loading || quantity <= minQuantity}
-        onClick={() => updateQuantity(quantity - 1)}
-      >
-        -
-      </Button>
-      <span className="min-w-10 text-center text-sm font-semibold text-white">
-        {quantity}
-      </span>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={loading || (maxQuantity !== null && quantity >= maxQuantity)}
-        onClick={() => updateQuantity(quantity + 1)}
-      >
-        +
-      </Button>
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="inline-flex items-center rounded-full border border-brand-gray-mid bg-brand-black/70 p-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 rounded-full border-0 px-0 py-0 text-white hover:bg-white/10"
+          disabled={loading || quantity <= minQuantity}
+          onClick={() => updateQuantity(quantity - 1)}
+          aria-label="Diminuir quantidade"
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+        <span className="min-w-8 text-center text-sm font-semibold text-white">
+          {quantity}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 rounded-full border-0 px-0 py-0 text-white hover:bg-white/10"
+          disabled={loading || (maxQuantity !== null && quantity >= maxQuantity)}
+          onClick={() => updateQuantity(quantity + 1)}
+          aria-label="Aumentar quantidade"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
       <Button
         type="button"
         variant="ghost"
         size="sm"
+        className="rounded-full border border-transparent px-0 py-0 text-xs uppercase tracking-[0.18em] text-brand-gray-light hover:bg-transparent hover:text-white"
         disabled={loading}
         onClick={removeItem}
       >
+        <Trash2 className="h-3.5 w-3.5" />
         Remover
       </Button>
     </div>

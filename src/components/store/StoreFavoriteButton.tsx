@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type StoreFavoriteButtonProps = {
@@ -23,7 +23,6 @@ export function StoreFavoriteButton({
   className = "",
 }: StoreFavoriteButtonProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
   const [loading, setLoading] = useState(false);
 
@@ -62,8 +61,7 @@ export function StoreFavoriteButton({
         | null;
 
       if (response.status === 401) {
-        toast.error("Entre na sua conta para salvar favoritos.");
-        router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/favoritos")}`);
+        toast.error("Entre na sua conta para adicionar este produto aos favoritos.");
         return;
       }
 

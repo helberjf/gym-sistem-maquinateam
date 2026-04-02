@@ -1,10 +1,9 @@
 import { z } from "zod";
-import { auth } from "@/auth";
 import {
   handleRouteError,
   successResponse,
-  UnauthorizedError,
 } from "@/lib/errors";
+import { getOptionalSession } from "@/lib/auth/session";
 import { getPixCheckoutStatus } from "@/lib/payments/pix";
 import { parseSearchParams } from "@/lib/validators";
 
@@ -16,20 +15,15 @@ const pixStatusQuerySchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      throw new UnauthorizedError("Entre na sua conta para consultar o Pix.");
-    }
-
     const { payment } = parseSearchParams(
       new URL(request.url).searchParams,
       pixStatusQuerySchema,
     );
+    const session = await getOptionalSession();
 
     const status = await getPixCheckoutStatus({
       checkoutPaymentId: payment,
-      userId: session.user.id,
+      userId: session?.user?.id ?? null,
     });
 
     return successResponse(status);

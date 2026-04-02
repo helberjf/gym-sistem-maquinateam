@@ -11,6 +11,7 @@ import {
 } from "@prisma/client";
 import { auth } from "@/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { getOptionalSession } from "@/lib/auth/session";
 import { BRAND } from "@/lib/constants/brand";
 import {
   ConflictError,
@@ -32,7 +33,7 @@ import {
   formatAbacatePayCellphone,
 } from "@/lib/payments/abacatepay";
 import { resolvePaymentProvider } from "@/lib/payments/provider";
-import { getCartSnapshot } from "@/lib/store/cart";
+import { getActiveCartId, getCartSnapshot } from "@/lib/store/cart";
 import { validateCouponForItems } from "@/lib/store/coupons";
 import {
   DELIVERY_METHOD_DESCRIPTIONS,
@@ -51,9 +52,11 @@ type OrderFilters = z.infer<typeof orderFiltersSchema>;
 type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
 type MutationContext = {
-  userId: string;
+  userId?: string | null;
   request?: Request;
 };
+
+type StoreCheckoutUser = Awaited<ReturnType<typeof getOptionalStoreCheckoutUser>>;
 
 type PreparedCartItem = {
   productId: string;
@@ -71,6 +74,8 @@ type PreparedCartItem = {
   imageUrl: string | null;
   weightGrams: number | null;
 };
+
+type StoreOrderDbClient = Prisma.TransactionClient | typeof prisma;
 
 function normalizeDigits(value?: string | null) {
   return value?.replace(/\D/g, "") ?? "";
@@ -353,11 +358,11 @@ async function generateUniqueOrderNumber(tx: Prisma.TransactionClient, reference
   throw new ConflictError("Nao foi possivel gerar um numero unico para o pedido.");
 }
 
-async function getAuthenticatedStoreUser() {
-  const session = await auth();
+async function getOptionalStoreCheckoutUser() {
+  const session = await getOptionalSession();
 
   if (!session?.user?.id) {
-    throw new UnauthorizedError("Entre na sua conta para finalizar a compra.");
+    return null;
   }
 
   const user = await prisma.user.findUnique({
@@ -389,12 +394,49 @@ async function getAuthenticatedStoreUser() {
   return user;
 }
 
-async function resolveCheckoutAddress(userId: string, input: CheckoutInput) {
+function resolveCheckoutCustomer(input: {
+  user: StoreCheckoutUser;
+  guest: CheckoutInput["guest"];
+}) {
+  if (input.user) {
+    return {
+      userId: input.user.id,
+      authenticated: true,
+      name: input.user.name,
+      email: input.user.email,
+      phone: input.user.phone ?? "",
+      document: input.user.studentProfile?.cpf ?? null,
+    };
+  }
+
+  if (!input.guest) {
+    throw new ConflictError(
+      "Informe nome, e-mail, telefone e CPF para finalizar sem login.",
+    );
+  }
+
+  return {
+    userId: null,
+    authenticated: false,
+    name: input.guest.name,
+    email: input.guest.email,
+    phone: input.guest.phone,
+    document: input.guest.document,
+  };
+}
+
+async function resolveCheckoutAddress(userId: string | null, input: CheckoutInput) {
   if (input.deliveryMethod === DeliveryMethod.PICKUP) {
     return null;
   }
 
   if (input.shippingAddressId) {
+    if (!userId) {
+      throw new ConflictError(
+        "Entre na sua conta para usar um endereco salvo.",
+      );
+    }
+
     const savedAddress = await prisma.shippingAddress.findFirst({
       where: {
         id: input.shippingAddressId,
@@ -464,23 +506,13 @@ async function saveAddressForUser(userId: string, address: ShippingAddressInput)
   return created.id;
 }
 
-async function getPreparedCartItemsForUserCart(tx: Prisma.TransactionClient, userId: string) {
-  const cart = await tx.cart.findUnique({
+async function getPreparedCartItemsForCart(
+  db: StoreOrderDbClient,
+  cartId: string,
+) {
+  const items = await db.cartItem.findMany({
     where: {
-      userId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!cart) {
-    throw new ConflictError("Seu carrinho esta vazio.");
-  }
-
-  const items = await tx.cartItem.findMany({
-    where: {
-      cartId: cart.id,
+      cartId,
     },
     orderBy: {
       createdAt: "asc",
@@ -519,7 +551,7 @@ async function getPreparedCartItemsForUserCart(tx: Prisma.TransactionClient, use
   }
 
   return {
-    cartId: cart.id,
+    cartId,
     items: items.map((item) => {
       if (!item.product.storeVisible || item.product.status === ProductStatus.ARCHIVED) {
         throw new ConflictError(`O produto ${item.product.name} nao esta mais disponivel.`);
@@ -550,69 +582,50 @@ async function getPreparedCartItemsForUserCart(tx: Prisma.TransactionClient, use
 }
 
 export async function getCheckoutPageData() {
-  const user = await getAuthenticatedStoreUser();
-  await getCartSnapshot();
-  const [addresses, cartSnapshot] = await Promise.all([
-    prisma.shippingAddress.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-    }),
-    prisma.order.count({
-      where: {
-        userId: user.id,
-      },
-    }),
+  const [user, cart] = await Promise.all([
+    getOptionalStoreCheckoutUser(),
+    getCartSnapshot(),
   ]);
-
-  const cart = await prisma.cart.findUnique({
-    where: {
-      userId: user.id,
-    },
-    select: {
-      items: {
-        orderBy: {
-          createdAt: "asc",
+  const addresses = user
+    ? await prisma.shippingAddress.findMany({
+        where: {
+          userId: user.id,
         },
-        select: {
-          id: true,
-          quantity: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              category: true,
-              shortDescription: true,
-              priceCents: true,
-              status: true,
-              storeVisible: true,
-              stockQuantity: true,
-              lowStockThreshold: true,
-              trackInventory: true,
-              images: {
-                orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
-                take: 1,
-                select: {
-                  url: true,
-                  altText: true,
-                },
-              },
-            },
-          },
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      })
+    : [];
+  const customerOrderCount = user
+    ? await prisma.order.count({
+        where: {
+          userId: user.id,
         },
-      },
-    },
-  });
+      })
+    : 0;
 
   return {
     user,
+    customer: user
+      ? {
+          authenticated: true,
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? "",
+          document: user.studentProfile?.cpf ?? "",
+        }
+      : {
+          authenticated: false,
+          name: "",
+          email: "",
+          phone: "",
+          document: "",
+    },
     addresses,
-    cart: cart ?? { items: [] },
-    customerOrderCount: cartSnapshot,
+    cart,
+    customerOrderCount,
     suggestedAddress:
-      user.studentProfile?.addressLine && user.studentProfile.city && user.studentProfile.state
+      user?.studentProfile?.addressLine &&
+      user.studentProfile.city &&
+      user.studentProfile.state
         ? {
             label: "Endereco do cadastro",
             recipientName: user.name,
@@ -631,72 +644,22 @@ export async function getCheckoutPageData() {
 }
 
 export async function getShippingQuoteForActiveCart(input: {
-  userId: string;
   address: ShippingAddressInput;
 }) {
-  await getCartSnapshot();
-  const cart = await prisma.cart.findUnique({
-    where: {
-      userId: input.userId,
-    },
-    select: {
-      items: {
-        select: {
-          quantity: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              sku: true,
-              category: true,
-              priceCents: true,
-              trackInventory: true,
-              stockQuantity: true,
-              status: true,
-              storeVisible: true,
-              lowStockThreshold: true,
-              images: {
-                take: 1,
-                select: {
-                  url: true,
-                },
-              },
-              weightGrams: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  const cartId = await getActiveCartId();
 
-  if (!cart || cart.items.length === 0) {
+  if (!cartId) {
     throw new ConflictError("Seu carrinho esta vazio.");
   }
 
-  const preparedItems = cart.items.map((item) => ({
-    productId: item.product.id,
-    name: item.product.name,
-    slug: item.product.slug,
-    sku: item.product.sku,
-    category: item.product.category,
-    priceCents: item.product.priceCents,
-    quantity: item.quantity,
-    trackInventory: item.product.trackInventory,
-    stockQuantity: item.product.stockQuantity,
-    status: item.product.status,
-    storeVisible: item.product.storeVisible,
-    lowStockThreshold: item.product.lowStockThreshold,
-    imageUrl: item.product.images[0]?.url ?? null,
-    weightGrams: item.product.weightGrams ?? null,
-  })) satisfies PreparedCartItem[];
-  const subtotalCents = preparedItems.reduce(
+  const preparedCart = await getPreparedCartItemsForCart(prisma, cartId);
+  const subtotalCents = preparedCart.items.reduce(
     (total, item) => total + item.priceCents * item.quantity,
     0,
   );
 
   return calculateShippingOptions({
-    items: preparedItems,
+    items: preparedCart.items,
     address: input.address,
     subtotalCents,
   });
@@ -705,7 +668,7 @@ export async function getShippingQuoteForActiveCart(input: {
 async function rollbackFailedStoreCheckout(input: {
   orderId: string;
   checkoutPaymentId: string;
-  userId: string;
+  userId?: string | null;
   failureReason: string;
 }) {
   await prisma.$transaction(async (tx) => {
@@ -757,7 +720,7 @@ async function rollbackFailedStoreCheckout(input: {
           quantityDelta: item.quantity,
           reason: "Estoque devolvido apos falha ao iniciar o pagamento online",
           note: input.failureReason,
-          performedByUserId: input.userId,
+          performedByUserId: input.userId ?? null,
         },
       });
     }
@@ -804,7 +767,7 @@ async function rollbackFailedStoreCheckout(input: {
           create: {
             status: OrderStatus.CANCELLED,
             note: "Pedido cancelado porque o checkout online nao conseguiu ser iniciado.",
-            changedByUserId: input.userId,
+            changedByUserId: input.userId ?? null,
           },
         },
       },
@@ -816,15 +779,18 @@ export async function createStoreCheckoutSession(
   input: CheckoutInput,
   context: MutationContext,
 ) {
-  const user = await getAuthenticatedStoreUser();
-  await getCartSnapshot();
+  const user = await getOptionalStoreCheckoutUser();
+  const customer = resolveCheckoutCustomer({
+    user,
+    guest: input.guest,
+  });
   const paymentProvider = resolvePaymentProvider(input.paymentMethod);
 
-  if (user.id !== context.userId) {
+  if (context.userId && user?.id && user.id !== context.userId) {
     throw new ForbiddenError("A conta autenticada nao corresponde ao checkout.");
   }
 
-  const resolvedAddress = await resolveCheckoutAddress(user.id, input);
+  const resolvedAddress = await resolveCheckoutAddress(customer.userId, input);
   const origin = context.request ? new URL(context.request.url).origin : undefined;
   const baseUrl = getAppUrl(origin);
   const returnUrls = buildMercadoPagoReturnUrls({
@@ -832,9 +798,14 @@ export async function createStoreCheckoutSession(
     failurePath: "/checkout/falha",
     origin,
   });
+  const cartId = await getActiveCartId();
+
+  if (!cartId) {
+    throw new ConflictError("Seu carrinho esta vazio.");
+  }
 
   const created = await prisma.$transaction(async (tx) => {
-    const { cartId, items } = await getPreparedCartItemsForUserCart(tx, user.id);
+    const { items } = await getPreparedCartItemsForCart(tx, cartId);
     const subtotalCents = items.reduce(
       (total, item) => total + item.priceCents * item.quantity,
       0,
@@ -856,7 +827,7 @@ export async function createStoreCheckoutSession(
       ? await validateCouponForItems({
           db: tx,
           code: input.couponCode,
-          userId: user.id,
+          userId: customer.userId,
           items: items.map((item) => ({
             productId: item.productId,
             category: item.category,
@@ -879,7 +850,7 @@ export async function createStoreCheckoutSession(
     const order = await tx.order.create({
       data: {
         orderNumber,
-        userId: user.id,
+        userId: customer.userId,
         couponId: couponValidation?.ok ? couponValidation.coupon.id : null,
         status: OrderStatus.PENDING,
         paymentStatus: PaymentStatus.PENDING,
@@ -892,10 +863,10 @@ export async function createStoreCheckoutSession(
         discountCents,
         shippingCents: selectedShipping.priceCents,
         totalCents,
-        customerName: user.name,
-        customerEmail: user.email,
-        customerPhone: user.phone ?? "",
-        customerDocument: user.studentProfile?.cpf ?? null,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        customerDocument: customer.document,
         shippingAddressLabel:
           input.deliveryMethod === DeliveryMethod.PICKUP
             ? "Retirada na academia"
@@ -904,11 +875,11 @@ export async function createStoreCheckoutSession(
               ),
         shippingRecipientName:
           input.deliveryMethod === DeliveryMethod.PICKUP
-            ? user.name
+            ? customer.name
             : (resolvedAddress as ShippingAddressInput | null)?.recipientName ?? null,
         shippingRecipientPhone:
           input.deliveryMethod === DeliveryMethod.PICKUP
-            ? user.phone ?? null
+            ? customer.phone || null
             : (resolvedAddress as ShippingAddressInput | null)?.recipientPhone ?? null,
         shippingZipCode:
           input.deliveryMethod === DeliveryMethod.PICKUP
@@ -963,7 +934,7 @@ export async function createStoreCheckoutSession(
           create: {
             status: OrderStatus.PENDING,
             note: "Pedido criado e aguardando pagamento online.",
-            changedByUserId: user.id,
+            changedByUserId: customer.userId,
           },
         },
       },
@@ -973,6 +944,7 @@ export async function createStoreCheckoutSession(
         totalCents: true,
         customerName: true,
         customerEmail: true,
+        customerPhone: true,
         customerDocument: true,
         shippingZipCode: true,
         shippingStreet: true,
@@ -996,7 +968,7 @@ export async function createStoreCheckoutSession(
         data: {
           couponId: couponValidation.coupon.id,
           orderId: order.id,
-          userId: user.id,
+          userId: customer.userId,
           discountCents,
         },
       });
@@ -1028,7 +1000,7 @@ export async function createStoreCheckoutSession(
           type: InventoryMovementType.ORDER_RESERVE,
           quantityDelta: item.quantity * -1,
           reason: "Reserva automatica de estoque no checkout online",
-          performedByUserId: user.id,
+          performedByUserId: customer.userId,
         },
       });
     }
@@ -1037,7 +1009,7 @@ export async function createStoreCheckoutSession(
       data: {
         kind: CheckoutPaymentKind.STORE_ORDER,
         provider: paymentProvider,
-        userId: user.id,
+        userId: customer.userId,
         orderId: order.id,
         amountCents: totalCents,
         status: PaymentStatus.PENDING,
@@ -1081,7 +1053,7 @@ export async function createStoreCheckoutSession(
         customer: buildStorePixCustomer({
           customerName: created.order.customerName,
           customerEmail: created.order.customerEmail,
-          customerPhone: user.phone,
+          customerPhone: created.order.customerPhone,
           customerDocument: created.order.customerDocument,
         }),
         metadata: {
@@ -1171,12 +1143,13 @@ export async function createStoreCheckoutSession(
 
       if (
         created.resolvedAddress &&
+        customer.userId &&
         input.saveAddress &&
         !input.shippingAddressId &&
         input.deliveryMethod !== DeliveryMethod.PICKUP
       ) {
         await saveAddressForUser(
-          user.id,
+          customer.userId,
           created.resolvedAddress as ShippingAddressInput,
         );
       }
@@ -1184,7 +1157,7 @@ export async function createStoreCheckoutSession(
 
     await logAuditEvent({
       request: context.request,
-      actorId: user.id,
+      actorId: customer.userId,
       action: "STORE_ORDER_CHECKOUT_CREATED",
       entityType: "Order",
       entityId: created.order.id,
@@ -1209,7 +1182,7 @@ export async function createStoreCheckoutSession(
     await rollbackFailedStoreCheckout({
       orderId: created.order.id,
       checkoutPaymentId: created.checkoutPayment.id,
-      userId: user.id,
+      userId: customer.userId,
       failureReason:
         error instanceof Error
           ? error.message

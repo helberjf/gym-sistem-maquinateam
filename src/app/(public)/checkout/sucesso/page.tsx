@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { Button } from "@/components/ui/Button";
+import { getOptionalSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { buildNoIndexMetadata } from "@/lib/seo";
 
@@ -19,14 +19,16 @@ export default async function StoreCheckoutSuccessPage({
 }) {
   const params = await searchParams;
   const orderId = typeof params.orderId === "string" ? params.orderId : "";
-  const session = await auth();
+  const session = await getOptionalSession();
 
   const order =
-    session?.user?.id && orderId
+    orderId
       ? await prisma.order.findFirst({
           where: {
             id: orderId,
-            userId: session.user.id,
+            ...(session?.user?.id
+              ? { userId: session.user.id }
+              : { userId: null }),
           },
           select: {
             id: true,
@@ -48,17 +50,25 @@ export default async function StoreCheckoutSuccessPage({
         <p className="mt-4 text-sm leading-7 text-brand-gray-light sm:text-base">
           {order
             ? `Pedido ${order.orderNumber} voltou do gateway. Estamos confirmando o pagamento e atualizando o status automaticamente.`
-            : "Recebemos o retorno do gateway. Assim que o pagamento for confirmado, o pedido aparecera atualizado no seu dashboard."}
+            : "Recebemos o retorno do gateway. Assim que o pagamento for confirmado, o pedido sera atualizado automaticamente."}
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button asChild className="w-full sm:w-auto">
-            <Link href={order ? `/dashboard/pedidos/${order.id}` : "/dashboard/pedidos"}>
-              Ver meus pedidos
-            </Link>
-          </Button>
+          {session?.user?.id ? (
+            <Button asChild className="w-full sm:w-auto">
+              <Link href={order ? `/dashboard/pedidos/${order.id}` : "/dashboard/pedidos"}>
+                Ver meus pedidos
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/products">Voltar para a loja</Link>
+            </Button>
+          )}
           <Button asChild variant="secondary" className="w-full sm:w-auto">
-            <Link href="/products">Voltar para a loja</Link>
+            <Link href={session?.user?.id ? "/products" : "/carrinho"}>
+              {session?.user?.id ? "Voltar para a loja" : "Voltar ao carrinho"}
+            </Link>
           </Button>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Login",
@@ -25,11 +27,17 @@ export default async function LoginPage() {
   );
 
   return (
-    <AuthCard
-      title="Entrar na conta"
-      description="Use seu e-mail e senha ou continue com Google."
-    >
-      <LoginForm googleEnabled={googleEnabled} />
-    </AuthCard>
+    <div className="flex w-full max-w-md flex-col gap-4">
+      <Button asChild variant="ghost" className="w-full">
+        <Link href="/">Voltar para a home</Link>
+      </Button>
+
+      <AuthCard
+        title="Entrar na conta"
+        description="Use seu e-mail e senha ou continue com Google."
+      >
+        <LoginForm googleEnabled={googleEnabled} />
+      </AuthCard>
+    </div>
   );
 }

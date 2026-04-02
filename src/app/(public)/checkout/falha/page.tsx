@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { Button } from "@/components/ui/Button";
+import { getOptionalSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { buildNoIndexMetadata } from "@/lib/seo";
 
@@ -19,14 +19,16 @@ export default async function StoreCheckoutFailurePage({
 }) {
   const params = await searchParams;
   const orderId = typeof params.orderId === "string" ? params.orderId : "";
-  const session = await auth();
+  const session = await getOptionalSession();
 
   const order =
-    session?.user?.id && orderId
+    orderId
       ? await prisma.order.findFirst({
           where: {
             id: orderId,
-            userId: session.user.id,
+            ...(session?.user?.id
+              ? { userId: session.user.id }
+              : { userId: null }),
           },
           select: {
             id: true,
@@ -52,7 +54,7 @@ export default async function StoreCheckoutFailurePage({
         </h1>
         <p className="mt-4 text-sm leading-7 text-brand-gray-light sm:text-base">
           {order
-            ? `O pedido ${order.orderNumber} ainda nao teve pagamento confirmado. Voce pode tentar novamente ou revisar o pedido no dashboard.`
+            ? `O pedido ${order.orderNumber} ainda nao teve pagamento confirmado. Voce pode tentar novamente ou revisar o pedido.`
             : "O pagamento nao foi concluido desta vez. Voce pode tentar novamente ou voltar para a loja."}
         </p>
 
@@ -63,8 +65,12 @@ export default async function StoreCheckoutFailurePage({
             </Button>
           ) : null}
           <Button asChild variant="secondary" className="w-full sm:w-auto">
-            <Link href={order ? `/dashboard/pedidos/${order.id}` : "/carrinho"}>
-              Revisar pedido
+            <Link
+              href={
+                session?.user?.id && order ? `/dashboard/pedidos/${order.id}` : "/carrinho"
+              }
+            >
+              {session?.user?.id && order ? "Ver no dashboard" : "Revisar pedido"}
             </Link>
           </Button>
         </div>

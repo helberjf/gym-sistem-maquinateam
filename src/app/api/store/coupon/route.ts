@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getOptionalSession } from "@/lib/auth/session";
 import { getCartSnapshot } from "@/lib/store/cart";
 import { validateCouponForItems } from "@/lib/store/coupons";
 import { handleRouteError, successResponse } from "@/lib/errors";
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   let rateLimitHeaders: Headers | undefined;
 
   try {
-    const session = await auth();
+    const session = await getOptionalSession();
     const input = await parseJsonBody(request, applyCouponSchema);
     const rateLimit = await enforceRateLimit({
       request,

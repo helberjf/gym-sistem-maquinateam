@@ -33,17 +33,17 @@ export const BRAND = {
   reviews: [
     {
       author: "Joao Augusto Freire",
-      text: "Centro de treinamento de altissimo nivel, com professor reconhecido e ambiente que faz voce querer voltar no dia seguinte.",
+      text: "Centro de treinamento de boxe de nivel altissimo, professor Arthur Maquininha super reconhecido, multi campeao! Excelente! Recomendo de olhos fechados!",
       rating: 5,
     },
     {
       author: "Cesar Nunes",
-      text: "Academia forte, organizada e acolhedora. Evolui muito no boxe e no condicionamento desde que comecei aqui.",
+      text: "Melhor academia de boxe! Ambiente motivador. Aprendi muito e me senti acolhido desde o primeiro dia. Recomendo demais!",
       rating: 5,
     },
     {
       author: "Matheus Correa",
-      text: "Perfeito para quem quer iniciar com base tecnica e tambem para quem ja treina em alto nivel.",
+      text: "Lugar perfeito para quem quer iniciar a praticar boxe, e tambem tem muitos atletas de alto nivel para quem ja e experiente! Recomendo muito.",
       rating: 5,
     },
   ],

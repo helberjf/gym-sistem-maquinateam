@@ -225,7 +225,8 @@ export default async function ProductDetailPage({
                     <AddToCartButton
                       productId={data.product.id}
                       className="w-full"
-                      label={soldOut ? "Produto indisponivel" : "Adicionar ao carrinho"}
+                      label={soldOut ? "Produto indisponivel" : "Comprar agora"}
+                      redirectToCart
                       disabled={soldOut}
                     />
                   ) : (

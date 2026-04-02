@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { StoreProductCard } from "@/components/store/StoreProductCard";
+import { ProductsInfiniteGrid } from "@/components/store/ProductsInfiniteGrid";
 import { Button } from "@/components/ui/Button";
 import { flattenSearchParams } from "@/lib/academy/presentation";
 import { buildPublicMetadata, serializeJsonLd, absoluteUrl } from "@/lib/seo";
-import { getStoreCatalogData } from "@/lib/store/catalog";
+import {
+  getStoreCatalogPageData,
+  STORE_CATALOG_PAGE_SIZE,
+} from "@/lib/store/catalog";
 import { CATALOG_SORT_OPTIONS } from "@/lib/store/constants";
 import { getStoreFavoriteProductIds } from "@/lib/store/favorites";
 import { parseSearchParams } from "@/lib/validators";
@@ -40,7 +43,10 @@ export default async function ProductsPage({
   );
 
   const [data, favoriteIds] = await Promise.all([
-    getStoreCatalogData(filters),
+    getStoreCatalogPageData(filters, {
+      page: 1,
+      limit: STORE_CATALOG_PAGE_SIZE,
+    }),
     getStoreFavoriteProductIds(),
   ]);
   const favoriteIdSet = new Set(favoriteIds);
@@ -72,11 +78,17 @@ export default async function ProductsPage({
         }}
       />
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-14 lg:px-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-white sm:text-4xl">Produtos</h1>
-          <p className="text-sm text-brand-gray-light">
-            {data.summary.totalProducts} produto(s) disponivel(is)
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-bold text-white sm:text-4xl">Produtos</h1>
+            <p className="text-sm text-brand-gray-light">
+              {data.summary.totalProducts} produto(s) disponivel(is)
+            </p>
+          </div>
+
+          <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto">
+            <Link href="/">Voltar para a home</Link>
+          </Button>
         </div>
 
         <form className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -143,16 +155,13 @@ export default async function ProductsPage({
             />
           </div>
         ) : (
-          <section className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {data.products.map((product) => (
-              <StoreProductCard
-                key={product.id}
-                product={product}
-                initialIsFavorite={favoriteIdSet.has(product.id)}
-                interactiveEnabled={!fallbackMode}
-              />
-            ))}
-          </section>
+          <ProductsInfiniteGrid
+            initialProducts={data.products}
+            initialFavoriteIds={Array.from(favoriteIdSet)}
+            filters={filters}
+            initialPagination={data.pagination}
+            interactiveEnabled={!fallbackMode}
+          />
         )}
       </div>
     </>

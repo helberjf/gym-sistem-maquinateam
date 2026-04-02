@@ -240,6 +240,12 @@ async function getOrCreateActiveCart(options?: { createIfMissing?: boolean }) {
   });
 }
 
+export async function getActiveCartId() {
+  const cart = await getOrCreateActiveCart();
+
+  return cart?.id ?? null;
+}
+
 export async function getCartSnapshot() {
   const session = await getOptionalSession();
   const cart = await getOrCreateActiveCart();

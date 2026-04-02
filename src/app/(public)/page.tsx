@@ -24,7 +24,7 @@ export default async function PublicHomePage() {
   const [session, featuredPlans, featuredProducts] = await Promise.all([
     getOptionalSession(),
     getFeaturedPublicPlans(3).catch(() => []),
-    getFeaturedProducts().catch(() => []),
+    getFeaturedProducts(12).catch(() => []),
   ]);
   const averageRating =
     BRAND.reviews.reduce((total, review) => total + review.rating, 0) /

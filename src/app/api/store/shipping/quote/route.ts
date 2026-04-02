@@ -1,4 +1,4 @@
-import { requireApiPermission } from "@/lib/permissions";
+import { getOptionalSession } from "@/lib/auth/session";
 import { getShippingQuoteForActiveCart } from "@/lib/store/orders";
 import { handleRouteError, successResponse } from "@/lib/errors";
 import {
@@ -14,17 +14,20 @@ export async function POST(request: Request) {
   let rateLimitHeaders: Headers | undefined;
 
   try {
-    const session = await requireApiPermission("viewStoreOrders");
+    const session = await getOptionalSession();
     const input = await parseJsonBody(request, shippingQuoteSchema);
     const rateLimit = await enforceRateLimit({
       request,
       limiter: mutationLimiter,
-      keyParts: [session.user.id, "store-shipping-quote", input.address.zipCode],
+      keyParts: [
+        session?.user?.id ?? "guest",
+        "store-shipping-quote",
+        input.address.zipCode,
+      ],
     });
     rateLimitHeaders = rateLimit.headers;
 
     const quotes = await getShippingQuoteForActiveCart({
-      userId: session.user.id,
       address: input.address,
     });
 

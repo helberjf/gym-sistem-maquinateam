@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingBag, Dumbbell, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { HomeFeaturedProductsPager } from "@/components/public/HomeFeaturedProductsPager";
 import { SectionHeading } from "@/components/public/SectionHeading";
-import { StoreProductCard } from "@/components/store/StoreProductCard";
+import { StudentTestimonialsCarousel } from "@/components/public/StudentTestimonialsCarousel";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
 import type { PublicPlanCatalogItem } from "@/lib/billing/public";
 import type { StoreCatalogProductCard } from "@/lib/store/catalog";
@@ -131,8 +132,8 @@ export function HomeLandingPage({
       <section className="relative overflow-hidden border-b border-brand-gray-mid">
         <div className="absolute inset-0">
           <Image
-            src="/images/fachada.webp"
-            alt={BRAND.name}
+            src="/images/mulher_lutando.jpg"
+            alt="Atleta treinando boxe na Maquina Team"
             fill
             priority
             sizes="100vw"
@@ -181,10 +182,10 @@ export function HomeLandingPage({
                   </p>
                   <p
                     className={[
-                      "mt-2 whitespace-nowrap leading-tight text-white sm:text-2xl",
+                      "mt-2 whitespace-nowrap leading-tight text-white",
                       compactValue
-                        ? "text-[clamp(0.5rem,2vw,0.72rem)] font-semibold tracking-normal"
-                        : "text-[clamp(0.72rem,3vw,0.95rem)] font-bold tracking-tight",
+                        ? "text-[clamp(0.72rem,3vw,0.95rem)] font-bold tracking-tight sm:text-[0.95rem] lg:text-[1.02rem] xl:text-[1.08rem]"
+                        : "text-[clamp(0.72rem,3vw,0.95rem)] font-bold tracking-tight sm:text-2xl",
                     ].join(" ")}
                   >
                     {item.value}
@@ -213,15 +214,7 @@ export function HomeLandingPage({
             </Button>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {featuredProducts.map((product) => (
-              <StoreProductCard
-                key={product.id}
-                product={product}
-                interactiveEnabled={true}
-              />
-            ))}
-          </div>
+          <HomeFeaturedProductsPager products={featuredProducts} />
 
           <div className="mt-6 text-center sm:hidden">
             <Button asChild variant="secondary" className="w-full gap-2">
@@ -304,39 +297,6 @@ export function HomeLandingPage({
         )}
       </section>
 
-      {/* DEPOIMENTOS */}
-      <section className="border-y border-brand-gray-mid bg-brand-gray-dark/60">
-        <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <SectionHeading
-            eyebrow="Depoimentos"
-            title="Quem treina sente a diferenca"
-            description="Feedback real de quem ja entrou na rotina da Maquina Team."
-            align="center"
-          />
-
-          <div className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-3">
-            {BRAND.reviews.map((review) => (
-              <article
-                key={review.author}
-                className="rounded-[2rem] border border-brand-gray-mid bg-brand-black/50 p-6"
-              >
-                <div className="mb-3 flex gap-1">
-                  {Array.from({ length: review.rating }).map((_, i) => (
-                    <span key={i} className="text-yellow-400">★</span>
-                  ))}
-                </div>
-                <p className="text-base leading-7 text-brand-gray-light">
-                  &ldquo;{review.text}&rdquo;
-                </p>
-                <p className="mt-6 text-sm font-semibold uppercase tracking-[0.16em] text-white">
-                  {review.author}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA FINAL */}
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_28%),linear-gradient(135deg,#0a0a0a,#161616)] p-1 shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
@@ -404,6 +364,20 @@ export function HomeLandingPage({
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* DEPOIMENTOS */}
+      <section className="border-t border-brand-gray-mid bg-brand-gray-dark/60">
+        <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <SectionHeading
+            eyebrow="Depoimentos"
+            title="Quem treina sente a diferenca"
+            description="Carrossel com depoimentos reais dos alunos da referencia oficial da Maquina Team."
+            align="center"
+          />
+
+          <StudentTestimonialsCarousel reviews={BRAND.reviews} />
         </div>
       </section>
     </div>

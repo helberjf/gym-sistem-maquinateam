@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { CheckoutForm } from "@/components/store/CheckoutForm";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
-import { requirePermission } from "@/lib/auth/guards";
 import { buildNoIndexMetadata } from "@/lib/seo";
 import { getCheckoutPageData } from "@/lib/store/orders";
 
@@ -15,7 +14,6 @@ export const metadata = buildNoIndexMetadata({
 });
 
 export default async function CheckoutPage() {
-  await requirePermission("viewStoreOrders", "/checkout");
   const data = await getCheckoutPageData();
   const cartItems = data.cart.items;
   const subtotalCents = cartItems.reduce(
@@ -57,6 +55,7 @@ export default async function CheckoutPage() {
           addresses={data.addresses}
           suggestedAddress={data.suggestedAddress}
           cartSubtotalCents={subtotalCents}
+          customer={data.customer}
         />
 
         <aside className="space-y-5">
@@ -82,20 +81,48 @@ export default async function CheckoutPage() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-brand-gray-mid bg-white p-5 text-black">
-            <p className="text-xs uppercase tracking-[0.28em] text-black/55">
-              Conta do cliente
-            </p>
-            <p className="mt-4 text-2xl font-bold uppercase">{data.user.name}</p>
-            <p className="mt-2 text-sm text-black/70">{data.user.email}</p>
-            <p className="mt-1 text-sm text-black/70">
-              {data.user.phone ?? "Telefone nao informado"}
-            </p>
-            <p className="mt-4 text-sm leading-7 text-black/70">
-              Este checkout gera um pedido vinculado a sua conta para acompanhamento
-              de status e historico dentro do dashboard.
-            </p>
-          </section>
+          {data.user ? (
+            <section className="hidden rounded-[2rem] border border-brand-gray-mid bg-brand-black p-5 text-white xl:block">
+              <p className="text-xs uppercase tracking-[0.28em] text-white/55">
+                Conta do cliente
+              </p>
+              <p className="mt-4 text-2xl font-bold uppercase">{data.user.name}</p>
+              <p className="mt-2 text-sm text-white/70">{data.user.email}</p>
+              <p className="mt-1 text-sm text-white/70">
+                {data.user.phone ?? "Telefone nao informado"}
+              </p>
+              <p className="mt-4 text-sm leading-7 text-white/70">
+                Este checkout gera um pedido vinculado a sua conta para acompanhamento
+                de status e historico dentro do dashboard.
+              </p>
+            </section>
+          ) : (
+            <section className="hidden rounded-[2rem] border border-brand-gray-mid bg-brand-black p-5 text-white xl:block">
+              <p className="text-xs uppercase tracking-[0.28em] text-white/55">
+                Checkout sem login
+              </p>
+              <p className="mt-4 text-2xl font-bold uppercase">
+                Finalize como visitante
+              </p>
+              <p className="mt-3 text-sm leading-7 text-white/70">
+                Informe seus dados no formulario para pagar agora. Se preferir,
+                voce tambem pode entrar para salvar enderecos, acompanhar pedidos
+                no painel e acelerar as proximas compras.
+              </p>
+              <div className="mt-5 flex flex-col gap-3">
+                <Button asChild className="w-full">
+                  <Link href="/login?callbackUrl=%2Fcheckout">Entrar</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="secondary"
+                  className="w-full border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/cadastro?callbackUrl=%2Fcheckout">Criar conta</Link>
+                </Button>
+              </div>
+            </section>
+          )}
         </aside>
       </div>
     </div>

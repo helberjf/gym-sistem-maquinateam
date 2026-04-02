@@ -10,6 +10,7 @@ import type { catalogFiltersSchema } from "@/lib/validators/store";
 type CatalogFilters = z.infer<typeof catalogFiltersSchema>;
 
 export type StoreCatalogDataSource = "live" | "fallback";
+export const STORE_CATALOG_PAGE_SIZE = 8;
 
 export type StoreCatalogImage = {
   id?: string;
@@ -499,6 +500,23 @@ function buildCatalogSummary(products: StoreCatalogProductCard[]) {
   };
 }
 
+function buildCatalogPagination(input: {
+  totalItems: number;
+  page: number;
+  limit: number;
+}) {
+  const totalPages = Math.max(1, Math.ceil(input.totalItems / input.limit));
+  const safePage = Math.min(Math.max(1, input.page), totalPages);
+
+  return {
+    page: safePage,
+    limit: input.limit,
+    totalItems: input.totalItems,
+    totalPages,
+    hasMore: safePage < totalPages,
+  };
+}
+
 function getFallbackCategories() {
   return [...new Set(FALLBACK_STORE_PRODUCTS.map((product) => product.category))].sort((a, b) =>
     a.localeCompare(b),
@@ -618,6 +636,31 @@ export async function getStoreCatalogData(filters: CatalogFilters) {
     console.error("Falha ao carregar o catalogo publico da loja.", error);
     return buildFallbackCatalogData(filters);
   }
+}
+
+export async function getStoreCatalogPageData(
+  filters: CatalogFilters,
+  options?: {
+    page?: number;
+    limit?: number;
+  },
+) {
+  const data = await getStoreCatalogData(filters);
+  const limit = Math.max(1, options?.limit ?? STORE_CATALOG_PAGE_SIZE);
+  const page = Math.max(1, options?.page ?? 1);
+  const pagination = buildCatalogPagination({
+    totalItems: data.products.length,
+    page,
+    limit,
+  });
+  const startIndex = (pagination.page - 1) * pagination.limit;
+  const endIndex = startIndex + pagination.limit;
+
+  return {
+    ...data,
+    products: data.products.slice(startIndex, endIndex),
+    pagination,
+  };
 }
 
 export async function getStoreProductDetail(slug: string) {

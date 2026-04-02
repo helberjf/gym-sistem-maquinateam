@@ -6,6 +6,11 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 import { CATALOG_SORT_OPTIONS } from "@/lib/store/constants";
+import {
+  normalizeBrazilPhoneDigits,
+  onlyDigits,
+} from "@/lib/utils/formatters";
+import { validateCpf } from "@/lib/validators/validateCpf";
 
 const optionalTrimmedString = z.preprocess(
   (value) =>
@@ -18,6 +23,41 @@ const optionalText = z.preprocess(
     typeof value === "string" && value.trim().length === 0 ? undefined : value,
   z.string().trim().max(4000).optional(),
 );
+
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email("Informe um e-mail valido.");
+
+const phoneSchema = z
+  .string()
+  .trim()
+  .min(8, "Informe um telefone valido.")
+  .max(30, "Informe um telefone valido.");
+
+const brazilPhoneSchema = z
+  .string()
+  .trim()
+  .refine((value) => {
+    const digits = normalizeBrazilPhoneDigits(value);
+    return digits.length >= 10 && digits.length <= 11;
+  }, "Informe um telefone valido.");
+
+const zipCodeSchema = z
+  .string()
+  .trim()
+  .refine((value) => onlyDigits(value).length === 8, "Informe um CEP valido.");
+
+const cpfSchema = z
+  .string()
+  .trim()
+  .refine((value) => validateCpf(value), "Informe um CPF valido.");
+
+function hasSurname(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return parts.length >= 2 && parts.every((part) => part.length >= 2);
+}
 
 const optionalInteger = z.preprocess(
   (value) => {
@@ -92,6 +132,20 @@ export const catalogFiltersSchema = z.object({
     .optional(),
 });
 
+export const catalogPaginationSchema = catalogFiltersSchema.extend({
+  page: optionalInteger
+    .refine((value) => value === undefined || value >= 1, "Pagina invalida.")
+    .optional()
+    .default(1),
+  limit: optionalInteger
+    .refine(
+      (value) => value === undefined || (value >= 1 && value <= 24),
+      "Limite invalido.",
+    )
+    .optional()
+    .default(8),
+});
+
 export const cartItemMutationSchema = z.object({
   productId: z.string().min(1, "Produto obrigatorio."),
   quantity: z.preprocess(
@@ -126,9 +180,12 @@ export const updateCartItemSchema = z.object({
 export const shippingAddressInputSchema = z.object({
   label: optionalTrimmedString,
   recipientName: z.string().trim().min(2, "Informe o destinatario."),
-  recipientPhone: z.string().trim().min(8, "Informe um telefone valido."),
-  zipCode: z.string().trim().min(8, "Informe um CEP valido."),
-  state: z.string().trim().min(2, "Informe o estado."),
+  recipientPhone: brazilPhoneSchema,
+  zipCode: zipCodeSchema,
+  state: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{2}$/, "Informe uma UF valida."),
   city: z.string().trim().min(2, "Informe a cidade."),
   district: z.string().trim().min(2, "Informe o bairro."),
   street: z.string().trim().min(2, "Informe a rua."),
@@ -139,6 +196,18 @@ export const shippingAddressInputSchema = z.object({
 
 export const shippingQuoteSchema = z.object({
   address: shippingAddressInputSchema,
+});
+
+export const guestCheckoutCustomerSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe seu nome completo.")
+    .max(120)
+    .refine((value) => hasSurname(value), "Informe nome e sobrenome."),
+  email: emailSchema,
+  phone: brazilPhoneSchema,
+  document: cpfSchema,
 });
 
 export const applyCouponSchema = z.object({
@@ -153,6 +222,7 @@ export const checkoutSchema = z.object({
   couponCode: optionalTrimmedString,
   paymentMethod: z.nativeEnum(PaymentMethod).default(PaymentMethod.PIX),
   notes: optionalText,
+  guest: guestCheckoutCustomerSchema.optional(),
 });
 
 export const couponFiltersSchema = z.object({

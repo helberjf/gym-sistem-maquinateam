@@ -296,6 +296,12 @@ export default async function PlanosPage() {
         }}
       />
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mb-6 flex justify-center sm:justify-end">
+          <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto">
+            <Link href="/">Voltar para a home</Link>
+          </Button>
+        </div>
+
         <SectionHeading
           eyebrow="Planos"
           title="Escolha o seu ritmo"

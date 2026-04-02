@@ -40,18 +40,18 @@ function extractStoredPixData(rawPayload: unknown) {
 
 export async function getPixCheckoutStatus(input: {
   checkoutPaymentId: string;
-  userId: string;
+  userId?: string | null;
 }) {
   const checkoutPayment = await prisma.checkoutPayment.findFirst({
     where: {
       id: input.checkoutPaymentId,
-      userId: input.userId,
       provider: PaymentProvider.ABACATEPAY,
       method: PaymentMethod.PIX,
     },
     select: {
       id: true,
       kind: true,
+      userId: true,
       status: true,
       amountCents: true,
       providerPaymentId: true,
@@ -76,6 +76,10 @@ export async function getPixCheckoutStatus(input: {
   });
 
   if (!checkoutPayment) {
+    throw new NotFoundError("Pagamento Pix nao encontrado.");
+  }
+
+  if (checkoutPayment.userId && checkoutPayment.userId !== input.userId) {
     throw new NotFoundError("Pagamento Pix nao encontrado.");
   }
 
