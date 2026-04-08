@@ -1605,7 +1605,7 @@ async function main() {
   console.log("\nSeed concluído com sucesso.\n");
   console.table(summary);
   console.log("Credenciais de demonstração:");
-  console.log(`Admin: admin@maquinateam.com.br / ${adminPassword}`);
+  console.log(`Admin: Maquinateam.adm@gmail.com / ${adminPassword}`);
   console.log(`Recepção: recepcao@maquinateam.com.br / ${defaultStaffPassword}`);
   console.log(`Professor: ricardo.alves@maquinateam.com.br / ${defaultStaffPassword}`);
   console.log(`Aluno: alice.nogueira@maquinateam.com.br / ${defaultStudentPassword}`);

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getOptionalSession } from "@/lib/auth/session";
 import { removeCartItem, updateCartItemQuantity } from "@/lib/store/cart";
 import { handleRouteError, successResponse } from "@/lib/errors";
 import {
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   let rateLimitHeaders: Headers | undefined;
 
   try {
-    const session = await auth();
+    const session = await getOptionalSession();
     const { itemId } = await context.params;
     const input = await parseJsonBody(request, updateCartItemSchema);
     const rateLimit = await enforceRateLimit({
@@ -49,7 +49,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   let rateLimitHeaders: Headers | undefined;
 
   try {
-    const session = await auth();
+    const session = await getOptionalSession();
     const { itemId } = await context.params;
     const rateLimit = await enforceRateLimit({
       request,

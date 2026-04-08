@@ -143,7 +143,7 @@ Voce deve encontrar pelo menos:
 
 ### Admin
 
-- email: `admin@maquinateam.com.br`
+- email: `Maquinateam.adm@gmail.com`
 - senha: `SEED_ADMIN_PASSWORD` ou `Admin@123`
 
 ### Equipe

@@ -5,10 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AUTH_ERROR_CODES, getAuthErrorMessage } from "@/lib/auth/error-codes";
-import { sanitizeCallbackUrl } from "@/lib/auth/callback-url";
+import {
+  sanitizeCallbackUrl,
+  sanitizeClientRedirectUrl,
+} from "@/lib/auth/callback-url";
 import { type LoginInput, loginSchema } from "@/lib/auth/validation";
 import {
   authInputClassName,
@@ -50,6 +53,18 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"), "/dashboard");
+
+  useEffect(() => {
+    if (!searchParams.get("password")) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("password");
+
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `/login?${nextQuery}` : "/login");
+  }, [router, searchParams]);
 
   const initialMessage = useMemo(() => {
     if (searchParams.get("verified") === "1") {
@@ -113,7 +128,7 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
     }
 
     toast.success("Login realizado com sucesso.");
-    router.push(result?.url ?? callbackUrl);
+    router.push(sanitizeClientRedirectUrl(result?.url, callbackUrl));
     router.refresh();
   }
 

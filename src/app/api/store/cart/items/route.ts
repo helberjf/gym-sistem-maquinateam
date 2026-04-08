@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getOptionalSession } from "@/lib/auth/session";
 import { addCartItem } from "@/lib/store/cart";
 import { handleRouteError, successResponse } from "@/lib/errors";
 import {
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   let rateLimitHeaders: Headers | undefined;
 
   try {
-    const session = await auth();
+    const session = await getOptionalSession();
     const input = await parseJsonBody(request, cartItemMutationSchema);
     const rateLimit = await enforceRateLimit({
       request,

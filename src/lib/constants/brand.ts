@@ -13,7 +13,7 @@ export const BRAND = {
   contact: {
     phone: "(32) 99150-7929",
     whatsapp: "5532991507929",
-    email: "maquinateam.adm@gmail.com",
+    email: "Maquinateam.adm@gmail.com",
     instagram: "@maquinateam",
     instagramUrl: "https://instagram.com/maquinateam",
     whatsappUrl:

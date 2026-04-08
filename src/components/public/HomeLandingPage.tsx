@@ -373,7 +373,7 @@ export function HomeLandingPage({
           <SectionHeading
             eyebrow="Depoimentos"
             title="Quem treina sente a diferenca"
-            description="Carrossel com depoimentos reais dos alunos da referencia oficial da Maquina Team."
+            description="Google reviews que reforcam o ambiente, a evolucao e a energia da Maquina Team."
             align="center"
           />
 

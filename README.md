@@ -405,7 +405,7 @@ Seed inicial:
 
 Credenciais de seed:
 
-- Admin: `admin@maquinateam.com.br`
+- Admin: `Maquinateam.adm@gmail.com`
 - Recepcao: `recepcao@maquinateam.com.br`
 - Professor: `ricardo.alves@maquinateam.com.br`
 - Aluno exemplo: `alice.nogueira@maquinateam.com.br`

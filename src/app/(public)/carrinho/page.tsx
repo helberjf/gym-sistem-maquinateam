@@ -53,7 +53,7 @@ export default async function CartPage() {
             {cart.items.map((item) => (
               <article
                 key={item.id}
-                className="rounded-[1.5rem] border border-brand-gray-mid bg-brand-gray-dark p-4"
+                className="rounded-3xl border border-brand-gray-mid bg-brand-gray-dark p-4"
               >
                 <div className="grid grid-cols-[76px_minmax(0,1fr)] gap-3 sm:grid-cols-[88px_minmax(0,1fr)] lg:grid-cols-[88px_minmax(0,1fr)_auto] lg:items-center">
                   <div className="overflow-hidden rounded-xl border border-brand-gray-mid bg-brand-black">
@@ -114,7 +114,7 @@ export default async function CartPage() {
         </section>
 
         <aside className="space-y-4">
-          <section className="rounded-[1.5rem] border border-brand-gray-mid bg-brand-gray-dark p-4">
+          <section className="rounded-3xl border border-brand-gray-mid bg-brand-gray-dark p-4">
             <h2 className="text-xl font-bold uppercase text-white">Resumo</h2>
             <div className="mt-4 space-y-3 text-sm text-brand-gray-light">
               <div className="flex items-center justify-between">
