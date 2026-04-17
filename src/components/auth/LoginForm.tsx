@@ -13,10 +13,6 @@ import {
   sanitizeClientRedirectUrl,
 } from "@/lib/auth/callback-url";
 import { type LoginInput, loginSchema } from "@/lib/auth/validation";
-import {
-  authInputClassName,
-  authPrimaryButtonClassName,
-} from "@/components/auth/styles";
 
 type LoginFormProps = {
   googleEnabled: boolean;
@@ -140,12 +136,15 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
   }
 
   const email = watch("email");
+  const inputClassName =
+    "w-full rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm text-neutral-900 placeholder:text-neutral-400 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100";
+  const labelClassName = "text-xs font-medium text-neutral-700 dark:text-neutral-300";
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm text-brand-gray-light">
+    <div className="w-full space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        <div className="space-y-0.5">
+          <label htmlFor="email" className={labelClassName}>
             E-mail
           </label>
           <input
@@ -153,59 +152,51 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
             type="email"
             autoComplete="email"
             placeholder="seu@email.com"
-            className={authInputClassName}
+            className={inputClassName}
             disabled={loading || googleLoading}
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-xs text-brand-white">{errors.email.message}</p>
+            <p className="text-[11px] text-red-500">{errors.email.message}</p>
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-sm text-brand-gray-light">
-              Senha
-            </label>
-            <Link
-              href="/esqueci-senha"
-              className="text-xs text-brand-red hover:underline"
-            >
-              Esqueci minha senha
-            </Link>
-          </div>
+        <div className="space-y-0.5">
+          <label htmlFor="password" className={labelClassName}>
+            Senha
+          </label>
           <input
             id="password"
             type="password"
             autoComplete="current-password"
             placeholder="Sua senha"
-            className={authInputClassName}
+            className={inputClassName}
             disabled={loading || googleLoading}
             {...register("password")}
           />
           {errors.password && (
-            <p className="text-xs text-brand-white">{errors.password.message}</p>
+            <p className="text-[11px] text-red-500">{errors.password.message}</p>
           )}
         </div>
 
         {message && (
-          <div className="rounded-xl border border-brand-white/15 bg-brand-white/5 px-4 py-3 text-sm text-brand-white">
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
             {message}
           </div>
         )}
 
         {error && (
-          <div className="rounded-xl border border-brand-gray-light/20 bg-brand-black/70 px-4 py-3 text-sm text-brand-white">
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
             {error}
           </div>
         )}
 
         {showResend && (
-          <p className="text-xs text-brand-gray-light">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Precisa de um novo link?{" "}
             <Link
               href={`/reenvio-confirmacao?email=${encodeURIComponent(email ?? "")}`}
-              className="text-brand-red hover:underline"
+              className="text-blue-600 hover:underline"
             >
               Reenviar confirmacao
             </Link>
@@ -215,18 +206,18 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
         <button
           type="submit"
           disabled={loading || googleLoading}
-          className={authPrimaryButtonClassName}
+          className="w-full rounded-md bg-blue-600 py-1.5 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? "Entrando..." : "Entrar com e-mail"}
+          {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
 
-      <div className="relative">
+      <div className="relative my-2">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-brand-gray-mid" />
+          <span className="w-full border-t border-neutral-300 dark:border-neutral-700" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
-          <span className="bg-brand-gray-dark px-3 text-brand-gray-light">
+        <div className="relative flex justify-center text-[11px] uppercase">
+          <span className="bg-white px-2 text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
             ou continue com
           </span>
         </div>
@@ -247,18 +238,26 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
           {googleLoading ? "Conectando..." : "Continuar com Google"}
         </button>
       ) : (
-        <div className="rounded-xl border border-brand-gray-mid bg-brand-black/60 px-4 py-3 text-sm text-brand-gray-light">
+        <div className="rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
           Login com Google disponivel assim que `GOOGLE_CLIENT_ID` e
           `GOOGLE_CLIENT_SECRET` forem configurados.
         </div>
       )}
 
-      <p className="text-center text-sm text-brand-gray-light">
-        Nao tem conta?{" "}
-        <Link href="/cadastro" className="text-brand-red hover:underline">
-          Cadastre-se
-        </Link>
-      </p>
+      <nav className="space-y-1 text-center text-xs" aria-label="Links auxiliares de autenticacao">
+        <p>
+          <Link href="/esqueci-senha" className="text-blue-600 hover:underline">
+            Esqueceu sua senha?
+          </Link>
+        </p>
+
+        <p className="text-neutral-500 dark:text-neutral-400">
+          Nao tem conta?{" "}
+          <Link href="/cadastro" className="text-blue-600 hover:underline">
+            Criar conta
+          </Link>
+        </p>
+      </nav>
     </div>
   );
 }

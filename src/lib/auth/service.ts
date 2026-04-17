@@ -27,8 +27,54 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function normalizeOptionalString(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function parseDateOnly(value?: string | null) {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const [year, month, day] = trimmed.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function buildStudentRegistrationNumber(userId: string) {
   return `ALU-${userId.slice(-8).toUpperCase()}`;
+}
+
+function buildStudentAddressLine(input: RegisterInput) {
+  const street = normalizeOptionalString(input.street);
+  const number = normalizeOptionalString(input.number);
+  const complement = normalizeOptionalString(input.complement);
+  const district = normalizeOptionalString(input.district);
+
+  const baseLine = [street, number].filter(Boolean).join(", ");
+
+  if (!baseLine && !district && !complement) {
+    return null;
+  }
+
+  const segments = [baseLine];
+
+  if (district) {
+    segments.push(`Bairro ${district}`);
+  }
+
+  if (complement) {
+    segments.push(complement);
+  }
+
+  return segments.filter(Boolean).join(" - ");
 }
 
 function buildVerificationUrl(token: string) {
@@ -57,6 +103,7 @@ export async function registerStudent(
   options?: { onEmailReady?: EmailDispatcher },
 ) {
   const email = normalizeEmail(input.email);
+  const cpf = input.cpf ?? null;
 
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -73,6 +120,25 @@ export async function registerStudent(
     };
   }
 
+  if (cpf) {
+    const existingCpfOwner = await prisma.studentProfile.findUnique({
+      where: {
+        cpf,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingCpfOwner) {
+      return {
+        ok: false as const,
+        status: 409,
+        message: "Ja existe uma conta com esse CPF.",
+      };
+    }
+  }
+
   const passwordHash = await hashPassword(input.password);
   const rawToken = generateSecureToken();
   const verificationTokenHash = hashToken(rawToken);
@@ -85,6 +151,7 @@ export async function registerStudent(
         email,
         passwordHash,
         role: "ALUNO",
+        phone: normalizeOptionalString(input.phone),
         isActive: true,
       },
     });
@@ -94,6 +161,12 @@ export async function registerStudent(
         userId: createdUser.id,
         registrationNumber: buildStudentRegistrationNumber(createdUser.id),
         status: StudentStatus.PENDING,
+        birthDate: parseDateOnly(input.birthDate),
+        cpf,
+        addressLine: buildStudentAddressLine(input),
+        city: normalizeOptionalString(input.city),
+        state: normalizeOptionalString(input.state),
+        zipCode: input.zipCode ?? null,
         joinedAt: new Date(),
       },
     });
