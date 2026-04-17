@@ -167,7 +167,7 @@ function buildMonthlySeries(referenceDate = new Date(), totalMonths = 6) {
 }
 
 async function getReportOptions(viewer: ViewerContext) {
-  const [students, modalities, teachers] = await Promise.all([
+  const [students, modalities, teachers] = await prisma.$transaction([
     prisma.studentProfile.findMany({
       where: getStudentVisibilityWhere(viewer),
       orderBy: {
@@ -763,7 +763,7 @@ export async function getAdminDashboardData(viewer: ViewerContext) {
     recentAuditLogs,
     paymentsForChart,
     attendancesForChart,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.studentProfile.count({
       where: getStudentVisibilityWhere(viewer),
     }),
@@ -1069,7 +1069,7 @@ export async function getReceptionDashboardData(viewer: ViewerContext) {
     todayAttendance,
     upcomingPendingPayments,
     attendancesForChart,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.attendance.count({
       where: {
         AND: [
