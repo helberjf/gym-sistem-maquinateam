@@ -452,7 +452,7 @@ export const getPublicPlansCatalog = cache(async function getPublicPlansCatalog(
       return getFallbackPublicPlansCatalog();
     }
 
-    return plans.map(mapPlanToPublicCard);
+    return plans.map((plan) => mapPlanToPublicCard(plan));
   } catch (error) {
     console.error("Falha ao carregar catalogo de planos.", error);
     return getFallbackPublicPlansCatalog();
