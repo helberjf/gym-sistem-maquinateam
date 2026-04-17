@@ -1,5 +1,9 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_PUBLIC_PLAN_CATALOG,
+  type PublicPlanCatalogSeed,
+} from "@/lib/billing/public-plan-catalog";
 
 export type PublicPlanPeriodKey =
   | "monthly"
@@ -46,207 +50,6 @@ const SECTION_ORDER: PublicPlanPeriodKey[] = [
   "annual",
   "special",
 ];
-
-const FALLBACK_PUBLIC_PLANS = [
-  {
-    id: "fallback-plan-mensal-1x-na-semana",
-    slug: "mensal-1x-na-semana",
-    name: "Mensal 1x na Semana",
-    description:
-      "Plano mensal para manter constancia com uma aula por semana.",
-    benefits: [
-      "1 treino por semana",
-      "Acesso ao app do aluno",
-      "Acompanhamento basico da equipe",
-    ],
-    priceCents: 12900,
-    billingIntervalMonths: 1,
-    durationMonths: 1,
-    sessionsPerWeek: 1,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-mensal-2x-na-semana",
-    slug: "mensal-2x-na-semana",
-    name: "Mensal 2x na Semana",
-    description:
-      "Plano mensal para evoluir tecnica e condicionamento com duas aulas por semana.",
-    benefits: [
-      "2 treinos por semana",
-      "App com historico e pagamentos",
-      "Rotina forte de evolucao",
-    ],
-    priceCents: 15900,
-    billingIntervalMonths: 1,
-    durationMonths: 1,
-    sessionsPerWeek: 2,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-mensal-3x-na-semana",
-    slug: "mensal-3x-na-semana",
-    name: "Mensal 3x na Semana",
-    description:
-      "Plano mensal para acelerar a evolucao com tres aulas por semana.",
-    benefits: [
-      "3 treinos por semana",
-      "Melhor custo-beneficio do mensal",
-      "Mais intensidade na rotina",
-    ],
-    priceCents: 17900,
-    billingIntervalMonths: 1,
-    durationMonths: 1,
-    sessionsPerWeek: 3,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-semestral-1x-na-semana",
-    slug: "semestral-1x-na-semana",
-    name: "Semestral 1x na Semana",
-    description:
-      "Plano de 6 meses para manter constancia com economia mensal.",
-    benefits: [
-      "1 treino por semana",
-      "Total de R$ 714,00 no periodo",
-      "Melhor valor que o mensal",
-    ],
-    priceCents: 71400,
-    billingIntervalMonths: 6,
-    durationMonths: 6,
-    sessionsPerWeek: 1,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-semestral-2x-na-semana",
-    slug: "semestral-2x-na-semana",
-    name: "Semestral 2x na Semana",
-    description:
-      "Plano de 6 meses para manter ritmo forte e previsibilidade.",
-    benefits: [
-      "2 treinos por semana",
-      "Total de R$ 858,00 no periodo",
-      "Compromisso de medio prazo",
-    ],
-    priceCents: 85800,
-    billingIntervalMonths: 6,
-    durationMonths: 6,
-    sessionsPerWeek: 2,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-semestral-3x-na-semana",
-    slug: "semestral-3x-na-semana",
-    name: "Semestral 3x na Semana",
-    description:
-      "Plano de 6 meses para quem quer treinar serio e colher resultado.",
-    benefits: [
-      "3 treinos por semana",
-      "Total de R$ 978,00 no periodo",
-      "Ritmo forte de evolucao",
-    ],
-    priceCents: 97800,
-    billingIntervalMonths: 6,
-    durationMonths: 6,
-    sessionsPerWeek: 3,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-anual-1x-na-semana",
-    slug: "anual-1x-na-semana",
-    name: "Anual 1x na Semana",
-    description:
-      "Plano anual com a menor mensalidade da grade para manter constancia.",
-    benefits: [
-      "1 treino por semana",
-      "Total de R$ 1.308,00 no periodo",
-      "Maior economia no longo prazo",
-    ],
-    priceCents: 130800,
-    billingIntervalMonths: 12,
-    durationMonths: 12,
-    sessionsPerWeek: 1,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-anual-2x-na-semana",
-    slug: "anual-2x-na-semana",
-    name: "Anual 2x na Semana",
-    description:
-      "Plano anual equilibrado para tecnica, cardio e consistencia.",
-    benefits: [
-      "2 treinos por semana",
-      "Total de R$ 1.428,00 no periodo",
-      "Valor mensal mais competitivo",
-    ],
-    priceCents: 142800,
-    billingIntervalMonths: 12,
-    durationMonths: 12,
-    sessionsPerWeek: 2,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-anual-3x-na-semana",
-    slug: "anual-3x-na-semana",
-    name: "Anual 3x na Semana",
-    description:
-      "Plano anual premium para acelerar evolucao com a melhor relacao custo-frequencia.",
-    benefits: [
-      "3 treinos por semana",
-      "Total de R$ 1.788,00 no periodo",
-      "Plano premium da grade publica",
-    ],
-    priceCents: 178800,
-    billingIntervalMonths: 12,
-    durationMonths: 12,
-    sessionsPerWeek: 3,
-    isUnlimited: false,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-plano-full",
-    slug: "plano-full",
-    name: "Plano Full",
-    description:
-      "Qualquer dia e qualquer horario para quem quer viver a rotina completa da academia.",
-    benefits: [
-      "Treinos ilimitados",
-      "Qualquer dia e qualquer horario",
-      "Acesso completo a uma arte marcial",
-    ],
-    priceCents: 25000,
-    billingIntervalMonths: 1,
-    durationMonths: 1,
-    sessionsPerWeek: null,
-    isUnlimited: true,
-    enrollmentFeeCents: 0,
-  },
-  {
-    id: "fallback-plan-plano-full-desconto-social",
-    slug: "plano-full-desconto-social",
-    name: "Plano Full Desconto Social",
-    description:
-      "Siga nossos perfis, avalie a academia e consulte a equipe antes de contratar essa condicao especial.",
-    benefits: [
-      "Treinos ilimitados",
-      "Condicao social especial",
-      "Consulte a equipe antes de contratar",
-    ],
-    priceCents: 18500,
-    billingIntervalMonths: 1,
-    durationMonths: 1,
-    sessionsPerWeek: null,
-    isUnlimited: true,
-    enrollmentFeeCents: 0,
-  },
-] as const;
 
 function resolveFullPlanVariant(input: {
   name: string;
@@ -414,40 +217,105 @@ function mapPlanToPublicCard(plan: {
 }
 
 function getFallbackPublicPlansCatalog() {
-  return FALLBACK_PUBLIC_PLANS.map((plan) =>
-    mapPlanToPublicCard(plan, "fallback"),
+  return DEFAULT_PUBLIC_PLAN_CATALOG.map((plan) =>
+    mapPlanToPublicCard(
+      {
+        ...plan,
+        id: `fallback-plan-${plan.slug}`,
+      },
+      "fallback",
+    ),
+  );
+}
+
+function buildPublicPlanCreateData(plan: PublicPlanCatalogSeed) {
+  return {
+    name: plan.name,
+    slug: plan.slug,
+    description: plan.description,
+    benefits: [...plan.benefits],
+    modalityId: null,
+    priceCents: plan.priceCents,
+    billingIntervalMonths: plan.billingIntervalMonths,
+    durationMonths: plan.durationMonths,
+    sessionsPerWeek: plan.sessionsPerWeek,
+    isUnlimited: plan.isUnlimited,
+    enrollmentFeeCents: plan.enrollmentFeeCents,
+    active: true,
+  };
+}
+
+function buildPublicPlanUpdateData(plan: PublicPlanCatalogSeed) {
+  return {
+    name: plan.name,
+    description: plan.description,
+    benefits: [...plan.benefits],
+    modalityId: null,
+    priceCents: plan.priceCents,
+    billingIntervalMonths: plan.billingIntervalMonths,
+    durationMonths: plan.durationMonths,
+    sessionsPerWeek: plan.sessionsPerWeek,
+    isUnlimited: plan.isUnlimited,
+    enrollmentFeeCents: plan.enrollmentFeeCents,
+    active: true,
+  };
+}
+
+async function fetchActivePublicPlans() {
+  return prisma.plan.findMany({
+    where: {
+      active: true,
+    },
+    orderBy: [
+      { billingIntervalMonths: "asc" },
+      { priceCents: "asc" },
+      { name: "asc" },
+    ],
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      benefits: true,
+      priceCents: true,
+      billingIntervalMonths: true,
+      durationMonths: true,
+      sessionsPerWeek: true,
+      isUnlimited: true,
+      enrollmentFeeCents: true,
+    },
+  });
+}
+
+async function syncDefaultPublicPlansToDatabase() {
+  await prisma.$transaction(
+    DEFAULT_PUBLIC_PLAN_CATALOG.map((plan) =>
+      prisma.plan.upsert({
+        where: {
+          slug: plan.slug,
+        },
+        update: buildPublicPlanUpdateData(plan),
+        create: buildPublicPlanCreateData(plan),
+      }),
+    ),
   );
 }
 
 export const getPublicPlansCatalog = cache(async function getPublicPlansCatalog() {
   try {
-    const plans = await prisma.plan.findMany({
-      where: {
-        active: true,
-      },
-      orderBy: [
-        { billingIntervalMonths: "asc" },
-        { priceCents: "asc" },
-        { name: "asc" },
-      ],
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        benefits: true,
-        priceCents: true,
-        billingIntervalMonths: true,
-        durationMonths: true,
-        sessionsPerWeek: true,
-        isUnlimited: true,
-        enrollmentFeeCents: true,
-      },
-    });
+    let plans = await fetchActivePublicPlans();
 
     if (plans.length === 0) {
       console.warn(
-        "Catalogo publico de planos vazio. Usando fallback estatico para manter a vitrine disponivel.",
+        "Catalogo publico sem planos ativos. Sincronizando planos padrao no banco.",
+      );
+      await syncDefaultPublicPlansToDatabase();
+      plans = await fetchActivePublicPlans();
+    }
+
+    if (plans.length === 0) {
+      console.warn(
+        "Catalogo publico sem planos ativos. Usando fallback estatico para manter a vitrine disponivel.",
       );
       return getFallbackPublicPlansCatalog();
     }

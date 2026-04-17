@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { DEFAULT_PUBLIC_PLAN_CATALOG } from "../src/lib/billing/public-plan-catalog";
 
 const prisma = new PrismaClient();
 
@@ -509,195 +510,26 @@ async function main() {
     }),
   ]);
 
-  const plans = await Promise.all([
-    prisma.plan.create({
-      data: {
-        name: "Mensal 1x na Semana",
-        slug: "mensal-1x-na-semana",
-        description: "Plano mensal para manter constancia com uma aula por semana.",
-        benefits: [
-          "1 treino por semana",
-          "Acesso ao app do aluno",
-          "Acompanhamento basico da equipe",
-        ],
-        modalityId: null,
-        priceCents: 12900,
-        billingIntervalMonths: 1,
-        durationMonths: 1,
-        sessionsPerWeek: 1,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Mensal 2x na Semana",
-        slug: "mensal-2x-na-semana",
-        description: "Plano mensal para evoluir tecnica e condicionamento com duas aulas por semana.",
-        benefits: [
-          "2 treinos por semana",
-          "App com historico e pagamentos",
-          "Rotina forte de evolucao",
-        ],
-        modalityId: null,
-        priceCents: 15900,
-        billingIntervalMonths: 1,
-        durationMonths: 1,
-        sessionsPerWeek: 2,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Mensal 3x na Semana",
-        slug: "mensal-3x-na-semana",
-        description: "Plano mensal para acelerar a evolucao com tres aulas por semana.",
-        benefits: [
-          "3 treinos por semana",
-          "Melhor custo-beneficio do mensal",
-          "Mais intensidade na rotina",
-        ],
-        modalityId: null,
-        priceCents: 17900,
-        billingIntervalMonths: 1,
-        durationMonths: 1,
-        sessionsPerWeek: 3,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Semestral 1x na Semana",
-        slug: "semestral-1x-na-semana",
-        description: "Plano de 6 meses para manter constancia com economia mensal.",
-        benefits: [
-          "1 treino por semana",
-          "Total de R$ 714,00 no periodo",
-          "Melhor valor que o mensal",
-        ],
-        modalityId: null,
-        priceCents: 71400,
-        billingIntervalMonths: 6,
-        durationMonths: 6,
-        sessionsPerWeek: 1,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Semestral 2x na Semana",
-        slug: "semestral-2x-na-semana",
-        description: "Plano de 6 meses para manter ritmo forte e previsibilidade.",
-        benefits: [
-          "2 treinos por semana",
-          "Total de R$ 858,00 no periodo",
-          "Compromisso de medio prazo",
-        ],
-        modalityId: null,
-        priceCents: 85800,
-        billingIntervalMonths: 6,
-        durationMonths: 6,
-        sessionsPerWeek: 2,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Semestral 3x na Semana",
-        slug: "semestral-3x-na-semana",
-        description: "Plano de 6 meses para quem quer treinar serio e colher resultado.",
-        benefits: [
-          "3 treinos por semana",
-          "Total de R$ 978,00 no periodo",
-          "Ritmo forte de evolucao",
-        ],
-        modalityId: null,
-        priceCents: 97800,
-        billingIntervalMonths: 6,
-        durationMonths: 6,
-        sessionsPerWeek: 3,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Anual 1x na Semana",
-        slug: "anual-1x-na-semana",
-        description: "Plano anual com a menor mensalidade da grade para manter constancia.",
-        benefits: [
-          "1 treino por semana",
-          "Total de R$ 1.308,00 no periodo",
-          "Maior economia no longo prazo",
-        ],
-        modalityId: null,
-        priceCents: 130800,
-        billingIntervalMonths: 12,
-        durationMonths: 12,
-        sessionsPerWeek: 1,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Anual 2x na Semana",
-        slug: "anual-2x-na-semana",
-        description: "Plano anual equilibrado para tecnica, cardio e consistencia.",
-        benefits: [
-          "2 treinos por semana",
-          "Total de R$ 1.428,00 no periodo",
-          "Valor mensal mais competitivo",
-        ],
-        modalityId: null,
-        priceCents: 142800,
-        billingIntervalMonths: 12,
-        durationMonths: 12,
-        sessionsPerWeek: 2,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Anual 3x na Semana",
-        slug: "anual-3x-na-semana",
-        description: "Plano anual premium para acelerar evolucao com a melhor relacao custo-frequencia.",
-        benefits: [
-          "3 treinos por semana",
-          "Total de R$ 1.788,00 no periodo",
-          "Plano premium da grade publica",
-        ],
-        modalityId: null,
-        priceCents: 178800,
-        billingIntervalMonths: 12,
-        durationMonths: 12,
-        sessionsPerWeek: 3,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Plano Full",
-        slug: "plano-full",
-        description: "Qualquer dia e qualquer horario para quem quer viver a rotina completa da academia.",
-        benefits: [
-          "Treinos ilimitados",
-          "Qualquer dia e qualquer horario",
-          "Acesso completo a uma arte marcial",
-        ],
-        modalityId: null,
-        priceCents: 25000,
-        billingIntervalMonths: 1,
-        durationMonths: 1,
-        isUnlimited: true,
-      },
-    }),
-    prisma.plan.create({
-      data: {
-        name: "Plano Full Desconto Social",
-        slug: "plano-full-desconto-social",
-        description: "Siga nossos perfis, avalie a academia e consulte a equipe antes de contratar essa condicao especial.",
-        benefits: [
-          "Treinos ilimitados",
-          "Condicao social especial",
-          "Consulte a equipe antes de contratar",
-        ],
-        modalityId: null,
-        priceCents: 18500,
-        billingIntervalMonths: 1,
-        durationMonths: 1,
-        isUnlimited: true,
-      },
-    }),
-  ]);
+  const plans = await Promise.all(
+    DEFAULT_PUBLIC_PLAN_CATALOG.map((plan) =>
+      prisma.plan.create({
+        data: {
+          name: plan.name,
+          slug: plan.slug,
+          description: plan.description,
+          benefits: [...plan.benefits],
+          modalityId: null,
+          priceCents: plan.priceCents,
+          billingIntervalMonths: plan.billingIntervalMonths,
+          durationMonths: plan.durationMonths,
+          sessionsPerWeek: plan.sessionsPerWeek,
+          isUnlimited: plan.isUnlimited,
+          enrollmentFeeCents: plan.enrollmentFeeCents,
+          active: true,
+        },
+      }),
+    ),
+  );
 
   const planMap = Object.fromEntries(plans.map((plan) => [plan.slug, plan]));
 
