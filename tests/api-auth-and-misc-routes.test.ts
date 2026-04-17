@@ -8,6 +8,7 @@ import * as resetPasswordRoute from "@/app/api/auth/reset-password/route";
 import * as cepRoute from "@/app/api/cep/route";
 import * as healthRoute from "@/app/api/health/route";
 import * as mercadoPagoWebhookRoute from "@/app/api/mercadopago/webhook/route";
+import * as publicViewerRoute from "@/app/api/public/viewer/route";
 import { jsonRequest, expectRateLimitHeaders, readJson } from "./helpers/api-route";
 
 const mocks = vi.hoisted(() => {
@@ -95,6 +96,9 @@ const mocks = vi.hoisted(() => {
       checkoutPaymentId: "cp-1",
       status: "PAID",
     })),
+    getOptionalSession: vi.fn(async () => null),
+    getCartSummary: vi.fn(async () => ({ cartId: null, authenticated: false, itemCount: 0 })),
+    getStoreWishlistSummary: vi.fn(async () => ({ count: 0 })),
   };
 });
 
@@ -140,6 +144,7 @@ vi.mock("@/lib/rate-limit", () => ({
   registerLimiter: { key: "register" },
   resendVerificationLimiter: { key: "resend-verification" },
   resetPasswordLimiter: { key: "reset-password" },
+  publicReadLimiter: { key: "public-read" },
 }));
 
 vi.mock("@/lib/validators", async () => {
@@ -169,6 +174,18 @@ vi.mock("@/lib/payments/mercadopago", () => ({
 
 vi.mock("@/lib/payments/webhook", () => ({
   processMercadoPagoPaymentWebhook: mocks.processMercadoPagoPaymentWebhook,
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  getOptionalSession: mocks.getOptionalSession,
+}));
+
+vi.mock("@/lib/store/cart", () => ({
+  getCartSummary: mocks.getCartSummary,
+}));
+
+vi.mock("@/lib/store/favorites", () => ({
+  getStoreWishlistSummary: mocks.getStoreWishlistSummary,
 }));
 
 describe("API auth and misc routes", () => {
@@ -373,5 +390,51 @@ describe("API auth and misc routes", () => {
       providerKey: "mercado_pago:mp-1",
       providerObjectId: "mp-1",
     });
+  });
+
+  it("returns viewer state for an unauthenticated guest", async () => {
+    mocks.getOptionalSession.mockResolvedValueOnce(null);
+    mocks.getCartSummary.mockResolvedValueOnce({ cartId: null, authenticated: false, itemCount: 0 });
+    mocks.getStoreWishlistSummary.mockResolvedValueOnce({ count: 0 });
+
+    const response = await publicViewerRoute.GET(
+      new Request("https://example.com/api/public/viewer"),
+    );
+    const body = await readJson<{
+      ok: boolean;
+      isAuthenticated: boolean;
+      cartCount: number;
+      wishlistCount: number;
+    }>(response);
+
+    expect(response.status).toBe(200);
+    expectRateLimitHeaders(response);
+    expect(body.ok).toBe(true);
+    expect(body.isAuthenticated).toBe(false);
+    expect(body.cartCount).toBe(0);
+    expect(body.wishlistCount).toBe(0);
+  });
+
+  it("returns viewer state for an authenticated user with cart and wishlist items", async () => {
+    mocks.getOptionalSession.mockResolvedValueOnce({ user: { id: "user-1", role: "STUDENT" } });
+    mocks.getCartSummary.mockResolvedValueOnce({ cartId: "cart-1", authenticated: true, itemCount: 3 });
+    mocks.getStoreWishlistSummary.mockResolvedValueOnce({ count: 2 });
+
+    const response = await publicViewerRoute.GET(
+      new Request("https://example.com/api/public/viewer"),
+    );
+    const body = await readJson<{
+      ok: boolean;
+      isAuthenticated: boolean;
+      cartCount: number;
+      wishlistCount: number;
+    }>(response);
+
+    expect(response.status).toBe(200);
+    expectRateLimitHeaders(response);
+    expect(body.ok).toBe(true);
+    expect(body.isAuthenticated).toBe(true);
+    expect(body.cartCount).toBe(3);
+    expect(body.wishlistCount).toBe(2);
   });
 });

@@ -211,31 +211,36 @@ function mapPlanToPublicCard(plan: {
 }
 
 export const getPublicPlansCatalog = cache(async function getPublicPlansCatalog() {
-  const plans = await prisma.plan.findMany({
-    where: {
-      active: true,
-    },
-    orderBy: [
-      { billingIntervalMonths: "asc" },
-      { priceCents: "asc" },
-      { name: "asc" },
-    ],
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      description: true,
-      benefits: true,
-      priceCents: true,
-      billingIntervalMonths: true,
-      durationMonths: true,
-      sessionsPerWeek: true,
-      isUnlimited: true,
-      enrollmentFeeCents: true,
-    },
-  });
+  try {
+    const plans = await prisma.plan.findMany({
+      where: {
+        active: true,
+      },
+      orderBy: [
+        { billingIntervalMonths: "asc" },
+        { priceCents: "asc" },
+        { name: "asc" },
+      ],
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        benefits: true,
+        priceCents: true,
+        billingIntervalMonths: true,
+        durationMonths: true,
+        sessionsPerWeek: true,
+        isUnlimited: true,
+        enrollmentFeeCents: true,
+      },
+    });
 
-  return plans.map(mapPlanToPublicCard);
+    return plans.map(mapPlanToPublicCard);
+  } catch (error) {
+    console.error("Falha ao carregar catalogo de planos.", error);
+    return [];
+  }
 });
 
 export async function getPublicPlanSections() {
