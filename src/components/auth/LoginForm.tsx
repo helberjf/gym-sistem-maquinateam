@@ -27,7 +27,7 @@ function GoogleLogo() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[18px] w-[18px] shrink-0"
+      className="h-4 w-4 shrink-0"
     >
       <path
         fill="#4285F4"
@@ -237,10 +237,10 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading || googleLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-semibold text-neutral-800 transition-all hover:bg-neutral-100 hover:shadow-sm disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-4 py-1.5 text-sm font-medium text-neutral-800 transition-all hover:bg-neutral-100 hover:shadow-sm disabled:opacity-60"
         >
           {googleLoading ? (
-            <span className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
           ) : (
             <GoogleLogo />
           )}

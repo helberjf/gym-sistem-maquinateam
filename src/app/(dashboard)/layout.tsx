@@ -25,6 +25,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await requireAuthenticatedSession("/dashboard");
+  const sidebarNotice =
+    session.user.role === UserRole.ALUNO
+      ? null
+      : "Modulos operacionais e financeiros protegidos no proxy, no servidor e nas mutacoes sensiveis.";
 
   const sidebarLinks = [
     {
@@ -58,9 +62,13 @@ export default async function DashboardLayout({
       visible: hasPermission(session.user.role, "viewPlans"),
     },
     {
-      href: "/dashboard/assinaturas",
-      label: "Assinaturas",
-      visible: hasPermission(session.user.role, "viewSubscriptions"),
+      href:
+        session.user.role === UserRole.ALUNO ? "/planos" : "/dashboard/assinaturas",
+      label: session.user.role === UserRole.ALUNO ? "Planos" : "Assinaturas",
+      visible:
+        session.user.role === UserRole.ALUNO
+          ? true
+          : hasPermission(session.user.role, "viewSubscriptions"),
     },
     {
       href: "/dashboard/pagamentos",
@@ -178,9 +186,9 @@ export default async function DashboardLayout({
             </nav>
 
             <div className="mt-auto rounded-2xl border border-brand-gray-mid bg-brand-black/50 p-4">
-              <p className="text-sm text-brand-gray-light">
-                Modulos operacionais e financeiros protegidos no proxy, no servidor e nas mutacoes sensiveis.
-              </p>
+              {sidebarNotice ? (
+                <p className="text-sm text-brand-gray-light">{sidebarNotice}</p>
+              ) : null}
               <form action={handleSignOut} className="mt-4">
                 <button
                   type="submit"

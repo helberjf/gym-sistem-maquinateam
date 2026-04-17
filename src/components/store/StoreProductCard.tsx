@@ -68,7 +68,6 @@ export function StoreProductCard({
             alt={currentImage.altText ?? product.name}
             width={640}
             height={640}
-            unoptimized
             className="aspect-square h-full w-full object-contain p-5 transition duration-500 group-hover:scale-[1.05]"
           />
         </Link>

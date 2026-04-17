@@ -310,6 +310,10 @@ export async function verifyMercadoPagoWebhookRequest(request: Request) {
     if (!clientIp || !allowlist.includes(clientIp)) {
       throw new UnauthorizedError("IP do webhook nao autorizado.");
     }
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn(
+      "mercadopago webhook: MP_WEBHOOK_ALLOWED_IPS nao configurado — qualquer IP pode chamar este endpoint. Configure a allowlist no painel do Vercel.",
+    );
   }
 
   const webhookSecret = process.env.MP_WEBHOOK_SECRET?.trim();
@@ -351,6 +355,42 @@ export async function verifyMercadoPagoWebhookRequest(request: Request) {
   if (!timingSafeEqualHex(expectedSignature, parsedSignature.v1)) {
     throw new UnauthorizedError("Assinatura do webhook invalida.");
   }
+}
+
+export async function refundMercadoPagoPayment(
+  paymentId: string,
+  amountCents?: number,
+) {
+  const accessToken = getAccessToken();
+  const body = amountCents !== undefined ? { amount: amountCents / 100 } : undefined;
+
+  const response = await fetch(
+    `https://api.mercadopago.com/v1/payments/${paymentId}/refunds`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    },
+  );
+
+  const payload = (await response.json().catch(() => null)) as {
+    id?: number;
+    payment_id?: string;
+    amount?: number;
+    status?: string;
+    message?: string;
+  } | null;
+
+  if (!response.ok || !payload) {
+    throw new ServiceUnavailableError(
+      payload?.message ?? "Nao foi possivel processar o estorno no gateway.",
+    );
+  }
+
+  return payload;
 }
 
 export async function parseMercadoPagoWebhookPayload(request: Request) {

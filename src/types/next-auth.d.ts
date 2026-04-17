@@ -13,6 +13,7 @@ declare module "next-auth" {
   interface User {
     role?: UserRole;
     emailVerified?: Date | null;
+    isActive?: boolean;
   }
 }
 

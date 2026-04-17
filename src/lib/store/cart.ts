@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { Session } from "next-auth";
 import { ProductStatus, Prisma } from "@prisma/client";
 import { getOptionalSession } from "@/lib/auth/session";
 import { isLowStockProduct } from "@/lib/commerce/constants";
@@ -10,6 +11,11 @@ import {
 } from "@/lib/store/constants";
 
 type CartClient = Prisma.TransactionClient | typeof prisma;
+type CartSession = Session | null;
+type ActiveCartOptions = {
+  createIfMissing?: boolean;
+  session?: CartSession;
+};
 
 function buildCartExpiryDate() {
   return new Date(Date.now() + STORE_CART_COOKIE_MAX_AGE_SECONDS * 1000);
@@ -173,8 +179,12 @@ async function mergeGuestCartIntoUserCart(db: CartClient, input: {
   });
 }
 
-async function getOrCreateActiveCart(options?: { createIfMissing?: boolean }) {
-  const session = await getOptionalSession();
+async function resolveCartSession(session?: CartSession) {
+  return session === undefined ? getOptionalSession() : session;
+}
+
+async function getOrCreateActiveCart(options?: ActiveCartOptions) {
+  const session = await resolveCartSession(options?.session);
   const userId = session?.user?.id ?? null;
 
   if (userId) {
@@ -194,6 +204,9 @@ async function getOrCreateActiveCart(options?: { createIfMissing?: boolean }) {
         where: {
           userId,
         },
+        select: {
+          id: true,
+        },
       });
     }
 
@@ -206,6 +219,9 @@ async function getOrCreateActiveCart(options?: { createIfMissing?: boolean }) {
       },
       create: {
         userId,
+      },
+      select: {
+        id: true,
       },
     });
   }
@@ -223,6 +239,9 @@ async function getOrCreateActiveCart(options?: { createIfMissing?: boolean }) {
       where: {
         sessionToken,
       },
+      select: {
+        id: true,
+      },
     });
   }
 
@@ -237,18 +256,55 @@ async function getOrCreateActiveCart(options?: { createIfMissing?: boolean }) {
       sessionToken,
       expiresAt: buildCartExpiryDate(),
     },
+    select: {
+      id: true,
+    },
   });
 }
 
-export async function getActiveCartId() {
-  const cart = await getOrCreateActiveCart();
+export async function getActiveCartId(options?: { session?: CartSession }) {
+  const cart = await getOrCreateActiveCart({
+    session: options?.session,
+  });
 
   return cart?.id ?? null;
 }
 
-export async function getCartSnapshot() {
-  const session = await getOptionalSession();
-  const cart = await getOrCreateActiveCart();
+export async function getCartSummary(options?: { session?: CartSession }) {
+  const session = await resolveCartSession(options?.session);
+  const cart = await getOrCreateActiveCart({
+    session,
+  });
+
+  if (!cart) {
+    return {
+      cartId: null,
+      authenticated: Boolean(session?.user?.id),
+      itemCount: 0,
+    };
+  }
+
+  const summary = await prisma.cartItem.aggregate({
+    where: {
+      cartId: cart.id,
+    },
+    _sum: {
+      quantity: true,
+    },
+  });
+
+  return {
+    cartId: cart.id,
+    authenticated: Boolean(session?.user?.id),
+    itemCount: summary._sum.quantity ?? 0,
+  };
+}
+
+export async function getCartSnapshot(options?: { session?: CartSession }) {
+  const session = await resolveCartSession(options?.session);
+  const cart = await getOrCreateActiveCart({
+    session,
+  });
 
   if (!cart) {
     return {

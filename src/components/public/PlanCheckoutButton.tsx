@@ -4,13 +4,14 @@ import Link from "next/link";
 import { startTransition, useState } from "react";
 import { PaymentMethod } from "@prisma/client";
 import { toast } from "sonner";
+import { usePublicViewer } from "@/components/public/usePublicViewer";
 import { Button } from "@/components/ui/Button";
 
 type PlanCheckoutButtonProps = {
   planId: string;
   callbackUrl?: string;
   className?: string;
-  isAuthenticated: boolean;
+  isAuthenticated?: boolean;
   tone?: "dark" | "light";
 };
 
@@ -21,8 +22,15 @@ export function PlanCheckoutButton({
   isAuthenticated,
   tone = "dark",
 }: PlanCheckoutButtonProps) {
+  const viewer = usePublicViewer({
+    isAuthenticated,
+  });
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PIX);
+  const resolvedAuthentication =
+    viewer.resolved || isAuthenticated !== undefined
+      ? viewer.isAuthenticated
+      : Boolean(isAuthenticated);
   const optionToneClasses =
     tone === "light"
       ? {
@@ -74,13 +82,26 @@ export function PlanCheckoutButton({
     }
   }
 
-  if (!isAuthenticated) {
+  if (!resolvedAuthentication) {
+    const toneClasses =
+      tone === "light"
+        ? "bg-black text-white border-transparent hover:bg-black/90"
+        : "bg-brand-red text-black border-transparent hover:bg-brand-red-dark";
     return (
-      <Button asChild className={className}>
-        <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
-          Entrar para assinar
-        </Link>
-      </Button>
+      <Link
+        href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+        className={[
+          "inline-flex items-center justify-center gap-2 rounded-lg border font-medium",
+          "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red",
+          "px-4 py-2 text-sm",
+          toneClasses,
+          className ?? "",
+        ]
+          .join(" ")
+          .trim()}
+      >
+        Entrar para assinar
+      </Link>
     );
   }
 

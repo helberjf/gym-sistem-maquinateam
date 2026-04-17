@@ -1,6 +1,11 @@
-import FormData from "form-data";
-import Mailgun from "mailgun.js";
-import { passwordResetEmailTemplate, verificationEmailTemplate } from "@/lib/mail/templates";
+import { Resend } from "resend";
+import {
+  orderConfirmationEmailTemplate,
+  orderDeliveredEmailTemplate,
+  orderShippedEmailTemplate,
+  passwordResetEmailTemplate,
+  verificationEmailTemplate,
+} from "@/lib/mail/templates";
 
 type SendMailArgs = {
   to: string;
@@ -9,46 +14,92 @@ type SendMailArgs = {
   text?: string;
 };
 
-function getMailgunClient() {
-  const apiKey = process.env.MAILGUN_API_KEY?.trim();
-  const domain = process.env.MAILGUN_DOMAIN?.trim();
-  const baseUrl = process.env.MAILGUN_API_BASE_URL?.trim() || "https://api.mailgun.net";
+type MailConfigurationStatus = {
+  provider: "resend";
+  configured: boolean;
+  apiKeyConfigured: boolean;
+  senderConfigured: boolean;
+  issues: string[];
+};
 
-  if (!apiKey) {
-    throw new Error("MAILGUN_API_KEY is not configured.");
+function getConfiguredSender() {
+  const fullSender =
+    process.env.RESEND_FROM?.trim() || process.env.MAILGUN_FROM?.trim();
+
+  if (fullSender) {
+    return fullSender;
   }
 
-  if (!domain) {
-    throw new Error("MAILGUN_DOMAIN is not configured.");
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    process.env.MAILGUN_FROM_EMAIL?.trim();
+  const fromName =
+    process.env.RESEND_FROM_NAME?.trim() ||
+    process.env.MAILGUN_FROM_NAME?.trim();
+
+  if (!fromEmail) {
+    return null;
   }
 
-  const from =
-    process.env.MAILGUN_FROM?.trim() ||
-    "Maquina Team <no-reply@maquinateam.com.br>";
+  return fromName ? `${fromName} <${fromEmail}>` : fromEmail;
+}
 
-  const mailgun = new Mailgun(FormData);
+export function getMailConfigurationStatus(): MailConfigurationStatus {
+  const apiKeyConfigured = Boolean(process.env.RESEND_API_KEY?.trim());
+  const senderConfigured = Boolean(getConfiguredSender());
+  const issues: string[] = [];
+
+  if (!apiKeyConfigured) {
+    issues.push("RESEND_API_KEY is not configured.");
+  }
+
+  if (!senderConfigured) {
+    issues.push(
+      "RESEND_FROM is not configured. Use an address from a verified domain in Resend.",
+    );
+  }
 
   return {
-    client: mailgun.client({
-      username: "api",
-      key: apiKey,
-      url: baseUrl,
-    }),
-    domain,
-    from,
+    provider: "resend",
+    configured: apiKeyConfigured && senderConfigured,
+    apiKeyConfigured,
+    senderConfigured,
+    issues,
   };
 }
 
-export async function sendMail({ to, subject, html, text }: SendMailArgs) {
-  const { client, domain, from } = getMailgunClient();
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
 
-  await client.messages.create(domain, {
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured.");
+  }
+
+  const from = getConfiguredSender();
+
+  if (!from) {
+    throw new Error(
+      "RESEND_FROM is not configured. Set RESEND_FROM (or RESEND_FROM_EMAIL + RESEND_FROM_NAME) with an address from a verified domain in Resend.",
+    );
+  }
+
+  return { client: new Resend(apiKey), from };
+}
+
+export async function sendMail({ to, subject, html, text }: SendMailArgs) {
+  const { client, from } = getResendClient();
+
+  const { error } = await client.emails.send({
     from,
     to: [to],
     subject,
     text: text ?? subject,
     html,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 }
 
 export async function sendVerificationEmail(args: {
@@ -74,5 +125,63 @@ export async function sendPasswordResetEmail(args: {
     subject: "Redefina sua senha na Maquina Team",
     text: `Redefina sua senha acessando ${args.resetUrl}`,
     html: passwordResetEmailTemplate(args),
+  });
+}
+
+type OrderEmailItem = {
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+};
+
+export async function sendOrderConfirmationEmail(args: {
+  email: string;
+  name?: string | null;
+  orderNumber: string;
+  totalCents: number;
+  subtotalCents: number;
+  discountCents: number;
+  shippingCents: number;
+  deliveryLabel: string;
+  paymentMethod: string;
+  items: OrderEmailItem[];
+  trackOrderUrl: string;
+}) {
+  return sendMail({
+    to: args.email,
+    subject: `Pedido ${args.orderNumber} confirmado - Maquina Team`,
+    text: `Seu pedido ${args.orderNumber} foi recebido. Acompanhe em ${args.trackOrderUrl}`,
+    html: orderConfirmationEmailTemplate(args),
+  });
+}
+
+export async function sendOrderShippedEmail(args: {
+  email: string;
+  name?: string | null;
+  orderNumber: string;
+  trackingCode?: string | null;
+  deliveryLabel: string;
+  trackOrderUrl: string;
+}) {
+  return sendMail({
+    to: args.email,
+    subject: `Pedido ${args.orderNumber} enviado - Maquina Team`,
+    text: `Seu pedido ${args.orderNumber} saiu para entrega. Acompanhe em ${args.trackOrderUrl}`,
+    html: orderShippedEmailTemplate(args),
+  });
+}
+
+export async function sendOrderDeliveredEmail(args: {
+  email: string;
+  name?: string | null;
+  orderNumber: string;
+  trackOrderUrl: string;
+}) {
+  return sendMail({
+    to: args.email,
+    subject: `Pedido ${args.orderNumber} entregue - Maquina Team`,
+    text: `Seu pedido ${args.orderNumber} foi entregue. Acesse ${args.trackOrderUrl}`,
+    html: orderDeliveredEmailTemplate(args),
   });
 }

@@ -2,15 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import { BRAND } from "@/lib/constants/brand";
-import { getOptionalSession } from "@/lib/auth/session";
-import { Button } from "@/components/ui/Button";
-import { StoreCartLink } from "@/components/store/StoreCartLink";
-import { StoreWishlistLink } from "@/components/store/StoreWishlistLink";
+import { NavbarClientControls } from "@/components/layout/NavbarClientControls";
 
-export async function Navbar() {
-  const session = await getOptionalSession();
-  const isAuthenticated = Boolean(session?.user?.id);
-
+export function Navbar() {
   const links = [
     { href: "/", label: "Home" },
     { href: "/products", label: "Produtos" },
@@ -51,30 +45,14 @@ export async function Navbar() {
               </Link>
             </li>
           ))}
-          <li>
-            <StoreWishlistLink />
-          </li>
-          <li>
-            <StoreCartLink />
-          </li>
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Button asChild variant="ghost" size="sm">
-            <Link href={isAuthenticated ? "/dashboard" : "/login"}>
-              {isAuthenticated ? "Dashboard" : "Login"}
-            </Link>
-          </Button>
-          {!isAuthenticated ? (
-            <Button asChild size="sm">
-              <Link href="/cadastro">Cadastrar</Link>
-            </Button>
-          ) : null}
+          <NavbarClientControls mode="desktop" />
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
-          <StoreWishlistLink mobile />
-          <StoreCartLink mobile />
+          <NavbarClientControls mode="mobile-icons" />
           <details className="group relative">
             <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-brand-gray-mid bg-brand-gray-dark text-white sm:h-11 sm:w-11">
               <Menu className="h-5 w-5" />
@@ -91,22 +69,7 @@ export async function Navbar() {
                   </Link>
                 ))}
               </div>
-              <div className="mt-4 grid grid-cols-1 gap-3">
-                <Link
-                  href={isAuthenticated ? "/dashboard" : "/login"}
-                  className="rounded-2xl border border-brand-gray-mid px-4 py-3 text-center text-sm font-semibold text-white"
-                >
-                  {isAuthenticated ? "Abrir dashboard" : "Entrar"}
-                </Link>
-                {!isAuthenticated ? (
-                  <Link
-                    href="/cadastro"
-                    className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-black"
-                  >
-                    Criar conta
-                  </Link>
-                ) : null}
-              </div>
+              <NavbarClientControls mode="mobile-menu" />
             </div>
           </details>
         </div>

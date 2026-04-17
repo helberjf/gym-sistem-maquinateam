@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { refreshPublicViewer } from "@/components/public/usePublicViewer";
 
 type StoreFavoriteButtonProps = {
   productId: string;
@@ -78,6 +79,7 @@ export function StoreFavoriteButton({
             ? `${productName} foi salvo nos favoritos.`
             : `${productName} saiu dos favoritos.`),
       );
+      void refreshPublicViewer();
       router.refresh();
     } catch {
       toast.error("Nao foi possivel atualizar seus favoritos.");

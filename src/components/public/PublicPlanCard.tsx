@@ -8,13 +8,11 @@ import type { PublicPlanCatalogItem } from "@/lib/billing/public";
 
 type PublicPlanCardProps = {
   plan: PublicPlanCatalogItem;
-  isAuthenticated: boolean;
   callbackUrl?: string;
 };
 
 export function PublicPlanCard({
   plan,
-  isAuthenticated,
   callbackUrl,
 }: PublicPlanCardProps) {
   const recurringLabel = getBillingIntervalLabel(plan.billingIntervalMonths);
@@ -22,26 +20,24 @@ export function PublicPlanCard({
     plan.durationMonths ?? plan.billingIntervalMonths,
   );
   const badgeLabel = plan.isRecommended ? "RECOMENDADO" : plan.badge;
-  const isLightSurface = plan.featured || plan.isRecommended;
+  const emphasisTone = plan.isRecommended
+    ? "border-[#e2b34d]/60 bg-[radial-gradient(circle_at_top,rgba(226,179,77,0.18),transparent_34%),linear-gradient(180deg,#1e1608_0%,#0b0b0b_56%,#050505_100%)] shadow-[0_24px_90px_rgba(226,179,77,0.16)]"
+    : plan.featured
+      ? "border-white/20 bg-[linear-gradient(180deg,#1b1b1b_0%,#0e0e0e_100%)] shadow-[0_22px_80px_rgba(0,0,0,0.34)]"
+      : "border-brand-gray-mid bg-brand-gray-dark";
 
   return (
     <article
       className={[
         "flex h-full flex-col rounded-[2rem] border p-5 sm:p-6",
-        plan.isRecommended
-          ? "border-[#e2b34d] bg-[linear-gradient(180deg,#fff6d9_0%,#ffffff_42%)] text-black shadow-[0_20px_80px_rgba(226,179,77,0.18)]"
-          : plan.featured
-            ? "border-white bg-white text-black shadow-[0_20px_80px_rgba(255,255,255,0.08)]"
-            : "border-brand-gray-mid bg-brand-gray-dark text-white",
+        "text-white",
+        emphasisTone,
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
           <p
-            className={[
-              "text-xs uppercase tracking-[0.24em]",
-              isLightSurface ? "text-black/60" : "text-brand-gray-light",
-            ].join(" ")}
+            className="text-xs uppercase tracking-[0.24em] text-brand-gray-light"
           >
             {plan.periodLabel}
           </p>
@@ -53,8 +49,8 @@ export function PublicPlanCard({
           <span
             className={[
               "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
-              isLightSurface
-                ? "bg-black text-white"
+              plan.isRecommended
+                ? "border border-[#e2b34d]/40 bg-[#e2b34d]/12 text-[#f3d98d]"
                 : "border border-brand-gray-mid text-brand-gray-light",
             ].join(" ")}
           >
@@ -63,12 +59,7 @@ export function PublicPlanCard({
         ) : null}
       </div>
 
-      <p
-        className={[
-          "mt-4 text-sm leading-6",
-          isLightSurface ? "text-black/70" : "text-brand-gray-light",
-        ].join(" ")}
-      >
+      <p className="mt-4 text-sm leading-6 text-brand-gray-light">
         {plan.description ??
           "Plano ativo para acompanhar treinos, pagamentos e evolucao no sistema da academia."}
       </p>
@@ -100,17 +91,10 @@ export function PublicPlanCard({
         </p>
       </div>
 
-      <ul
-        className={[
-          "mt-6 space-y-3 text-sm",
-          isLightSurface ? "text-black/80" : "text-brand-gray-light",
-        ].join(" ")}
-      >
+      <ul className="mt-6 space-y-3 text-sm text-brand-gray-light">
         {(plan.benefits ?? []).map((benefit) => (
           <li key={benefit} className="flex gap-3">
-            <span className={isLightSurface ? "text-black" : "text-white"}>
-              +
-            </span>
+            <span className={plan.isRecommended ? "text-[#f3d98d]" : "text-white"}>+</span>
             <span>{benefit}</span>
           </li>
         ))}
@@ -119,13 +103,9 @@ export function PublicPlanCard({
       <div className="mt-8">
         <PlanCheckoutButton
           planId={plan.id}
-          isAuthenticated={isAuthenticated}
           callbackUrl={callbackUrl}
-          tone={isLightSurface ? "light" : "dark"}
-          className={[
-            "w-full",
-            isLightSurface ? "bg-black text-white hover:bg-black/90" : "",
-          ].join(" ")}
+          tone="dark"
+          className="w-full shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
         />
       </div>
     </article>

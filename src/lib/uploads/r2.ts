@@ -2,6 +2,7 @@ import "server-only";
 
 import crypto from "crypto";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ServiceUnavailableError } from "@/lib/errors";
 import { sanitizeFilename } from "@/lib/validators";
 
@@ -100,6 +101,36 @@ export async function uploadToR2(input: UploadToR2Input) {
   return {
     storageKey: key,
     url: `${config.publicBaseUrl}/${key}`,
+  };
+}
+
+export async function createPresignedUploadUrl(input: {
+  filename: string;
+  contentType: string;
+  prefix?: string;
+  expiresInSeconds?: number;
+}) {
+  const config = getR2Config();
+  const client = getR2Client();
+  const key = buildObjectKey(input.prefix ?? "uploads", input.filename);
+  const expiresIn = input.expiresInSeconds ?? 60;
+
+  const presignedUrl = await getSignedUrl(
+    client,
+    new PutObjectCommand({
+      Bucket: config.bucketName,
+      Key: key,
+      ContentType: input.contentType,
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+    { expiresIn },
+  );
+
+  return {
+    presignedUrl,
+    storageKey: key,
+    publicUrl: `${config.publicBaseUrl}/${key}`,
+    expiresInSeconds: expiresIn,
   };
 }
 

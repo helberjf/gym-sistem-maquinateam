@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { requestPasswordReset } from "@/lib/auth/service";
 import { handleRouteError, successResponse } from "@/lib/errors";
 import {
@@ -21,7 +22,17 @@ export async function POST(request: Request) {
       keyParts: [input.email],
     });
     rateLimitHeaders = rateLimit.headers;
-    const result = await requestPasswordReset(input, { request });
+
+    let deferredEmail: (() => Promise<void>) | null = null;
+    const result = await requestPasswordReset(
+      input,
+      { request },
+      { onEmailReady: (send) => { deferredEmail = send; } },
+    );
+
+    if (deferredEmail) {
+      after(() => (deferredEmail as () => Promise<void>)().catch(console.error));
+    }
 
     return attachRateLimitHeaders(successResponse(result), rateLimitHeaders);
   } catch (error) {

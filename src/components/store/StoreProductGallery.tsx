@@ -48,7 +48,6 @@ export function StoreProductGallery({
           alt={currentImage.altText ?? productName}
           width={960}
           height={960}
-          unoptimized
           className="aspect-square w-full object-cover"
         />
 
@@ -91,7 +90,6 @@ export function StoreProductGallery({
                 alt={image.altText ?? `${productName} ${index + 1}`}
                 width={240}
                 height={240}
-                unoptimized
                 className="aspect-square w-full object-cover"
               />
             </button>

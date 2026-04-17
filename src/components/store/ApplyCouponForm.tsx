@@ -22,8 +22,7 @@ export function ApplyCouponForm({
   const [message, setMessage] = useState<string | null>(null);
   const [valid, setValid] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleApply() {
     setLoading(true);
     setMessage(null);
 
@@ -88,15 +87,24 @@ export function ApplyCouponForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase())}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") handleApply();
+          }}
           className="w-full rounded-xl border border-brand-gray-mid bg-brand-black px-4 py-3 text-sm text-white outline-none transition focus:border-brand-red"
           placeholder="Cupom"
         />
-        <Button type="submit" variant="secondary" loading={loading} className="sm:min-w-40">
+        <Button
+          type="button"
+          variant="secondary"
+          loading={loading}
+          onClick={handleApply}
+          className="sm:min-w-40"
+        >
           Aplicar cupom
         </Button>
       </div>
@@ -111,6 +119,6 @@ export function ApplyCouponForm({
           {message}
         </p>
       ) : null}
-    </form>
+    </div>
   );
 }

@@ -13,6 +13,59 @@ const r2RemotePattern = r2PublicUrl
     })()
   : null;
 
+function getAppHost(): string {
+  const raw =
+    process.env.AUTH_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "http://localhost:3000";
+
+  try {
+    return new URL(raw).host;
+  } catch {
+    return "localhost:3000";
+  }
+}
+
+const securityHeaders = [
+  {
+    key: "X-DNS-Prefetch-Control",
+    value: "on",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=(self)",
+  },
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com https://www.mercadopago.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https:",
+      "connect-src 'self' https://api.mercadopago.com https://api.abacatepay.com https://viacep.com.br https://melhorenvio.com.br https://sandbox.melhorenvio.com.br",
+      "frame-src https://www.mercadopago.com https://www.mercadopago.com.br",
+      "media-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join("; "),
+  },
+];
+
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
@@ -20,8 +73,16 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000"],
+      allowedOrigins: [getAppHost()],
     },
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

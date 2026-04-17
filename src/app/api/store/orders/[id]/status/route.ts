@@ -1,11 +1,15 @@
-import { updateOrderStatus } from "@/lib/store/orders";
+import { after } from "next/server";
+import { OrderStatus } from "@prisma/client";
+import { getAppUrl } from "@/lib/app-url";
 import { handleRouteError, successResponse } from "@/lib/errors";
+import { sendOrderDeliveredEmail, sendOrderShippedEmail } from "@/lib/mail";
 import { requireApiPermission } from "@/lib/permissions";
 import {
   adminLimiter,
   attachRateLimitHeaders,
   enforceRateLimit,
 } from "@/lib/rate-limit";
+import { updateOrderStatus } from "@/lib/store/orders";
 import { parseJsonBody, updateOrderStatusSchema } from "@/lib/validators";
 
 export const runtime = "nodejs";
@@ -32,6 +36,32 @@ export async function PATCH(request: Request, context: RouteContext) {
       userId: session.user.id,
       request,
     });
+
+    if (order.customerEmail) {
+      const trackOrderUrl = `${getAppUrl()}/minha-conta/pedidos/${order.id}`;
+
+      if (order.status === OrderStatus.SHIPPED) {
+        after(() =>
+          sendOrderShippedEmail({
+            email: order.customerEmail as string,
+            name: order.customerName,
+            orderNumber: order.orderNumber,
+            trackingCode: order.trackingCode,
+            deliveryLabel: order.deliveryLabel,
+            trackOrderUrl,
+          }).catch(console.error),
+        );
+      } else if (order.status === OrderStatus.DELIVERED) {
+        after(() =>
+          sendOrderDeliveredEmail({
+            email: order.customerEmail as string,
+            name: order.customerName,
+            orderNumber: order.orderNumber,
+            trackOrderUrl,
+          }).catch(console.error),
+        );
+      }
+    }
 
     return attachRateLimitHeaders(
       successResponse({

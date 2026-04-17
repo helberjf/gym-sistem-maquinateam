@@ -30,7 +30,7 @@ Este projeto e uma plataforma full-stack de e-commerce com servicos, agendamento
 - NextAuth
 - Tailwind CSS
 - Cloudflare R2
-- Mailgun
+- Resend
 - Melhor Envio
 - Mercado Pago
 - AbacatePay
@@ -270,7 +270,7 @@ Exemplos de arquivos envolvidos/alterados nessa frente:
 - `app/api/wishlist/route.ts`
 - `app/wishlist/page.tsx`
 - `app/wishlist/WishlistClient.tsx`
-- `lib/mailgun.ts`
+- `src/lib/mail/index.ts`
 - `lib/email-templates/order-confirmation.ts`
 - `prisma/schema.prisma`
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { refreshPublicViewer } from "@/components/public/usePublicViewer";
 import { Button } from "@/components/ui/Button";
 
 type CartItemControlsProps = {
@@ -47,6 +48,7 @@ export function CartItemControls({
         return;
       }
 
+      void refreshPublicViewer();
       router.refresh();
     } catch {
       toast.error("Nao foi possivel atualizar a quantidade.");
@@ -75,6 +77,7 @@ export function CartItemControls({
       }
 
       toast.success("Item removido do carrinho.");
+      void refreshPublicViewer();
       router.refresh();
     } catch {
       toast.error("Nao foi possivel remover o item.");

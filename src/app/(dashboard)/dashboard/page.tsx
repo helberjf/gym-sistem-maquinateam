@@ -82,126 +82,169 @@ export default async function DashboardPage() {
   let receptionDashboardData:
     | Awaited<ReturnType<typeof getReceptionDashboardData>>
     | null = null;
-  const moduleCards = [
-    {
-      href: "/dashboard/alunos",
-      title: "Alunos",
-      description: "Cadastros, status e vinculos principais.",
-      visible: hasPermission(session.user.role, "viewStudents"),
-    },
-    {
-      href: "/dashboard/professores",
-      title: "Professores",
-      description: "Equipe docente e modalidades ensinadas.",
-      visible: hasPermission(session.user.role, "viewTeachers"),
-    },
-    {
-      href: "/dashboard/modalidades",
-      title: "Modalidades",
-      description: "Catalogo operacional da academia.",
-      visible: hasPermission(session.user.role, "viewModalities"),
-    },
-    {
-      href: "/dashboard/turmas",
-      title: "Turmas",
-      description: "Grade, horarios e vinculos de alunos.",
-      visible: hasPermission(session.user.role, "viewClassSchedules"),
-    },
-    {
-      href: "/dashboard/presenca",
-      title: "Presenca",
-      description: "Check-in, check-out e historico filtrado.",
-      visible: hasPermission(session.user.role, "viewAttendance"),
-    },
-    {
-      href: "/dashboard/planos",
-      title: "Planos",
-      description: "Catalogo comercial e recorrencias.",
-      visible: hasPermission(session.user.role, "viewPlans"),
-    },
-    {
-      href: "/dashboard/assinaturas",
-      title: "Assinaturas",
-      description: "Contratos, renovacoes e vinculos financeiros.",
-      visible: hasPermission(session.user.role, "viewSubscriptions"),
-    },
-    {
-      href: "/dashboard/pagamentos",
-      title: "Pagamentos",
-      description: "Mensalidades, vencimentos e inadimplencia.",
-      visible: hasPermission(session.user.role, "viewPayments"),
-    },
-    {
-      href: "/dashboard/treinos",
-      title: "Treinos",
-      description: "Modelos, atribuicoes e historico tecnico.",
-      visible: hasPermission(session.user.role, "viewTrainings"),
-    },
-    {
-      href: "/dashboard/produtos",
-      title: "Produtos",
-      description: "Cadastro, vitrine e estoque da loja da academia.",
-      visible: hasPermission(session.user.role, "viewProducts"),
-    },
-    {
-      href: "/dashboard/pedidos",
-      title: "Meus pedidos",
-      description: "Historico de compra, entrega e status do e-commerce.",
-      visible: hasPermission(session.user.role, "viewStoreOrders"),
-    },
-    {
-      href: "/dashboard/pedidos-loja",
-      title: "Pedidos da loja",
-      description: "Operacao administrativa de checkout, separacao e envio.",
-      visible: hasPermission(session.user.role, "manageStoreOrders"),
-    },
-    {
-      href: "/dashboard/cupons",
-      title: "Cupons",
-      description: "Campanhas promocionais, regras e limites do catalogo.",
-      visible: hasPermission(session.user.role, "manageCoupons"),
-    },
-    {
-      href: "/dashboard/avisos",
-      title: "Avisos",
-      description: "Comunicados operacionais e mensagens da academia.",
-      visible: hasPermission(session.user.role, "viewAnnouncements"),
-    },
-    {
-      href: "/dashboard/relatorios",
-      title: "Relatorios",
-      description: "Indicadores operacionais, financeiros e exportacao CSV.",
-      visible: hasPermission(session.user.role, "viewReports"),
-    },
-    {
-      href: "/dashboard/admin",
-      title: "Area administrativa",
-      description: "Painel analitico com auditoria, estoque e visao executiva.",
-      visible: hasPermission(session.user.role, "accessAdminEndpoints"),
-    },
-  ].filter((item) => item.visible);
+  const moduleCards = (
+    session.user.role === UserRole.ALUNO
+      ? [
+          {
+            href: "/dashboard/turmas",
+            title: "Turmas",
+            description: "Horarios e grade disponivel para o seu acompanhamento.",
+            visible: hasPermission(session.user.role, "viewClassSchedules"),
+          },
+          {
+            href: "/dashboard/presenca",
+            title: "Presenca",
+            description: "Seus check-ins, historico e frequencia.",
+            visible: hasPermission(session.user.role, "viewAttendance"),
+          },
+          {
+            href: "/planos",
+            title: "Planos",
+            description: "Veja os planos disponiveis e escolha a melhor opcao para a sua rotina.",
+            visible: true,
+          },
+          {
+            href: "/dashboard/pagamentos",
+            title: "Pagamentos",
+            description: "Mensalidades, vencimentos e comprovacoes do seu perfil.",
+            visible: hasPermission(session.user.role, "viewPayments"),
+          },
+          {
+            href: "/dashboard/treinos",
+            title: "Treinos",
+            description: "Modelos atribuidos e historico tecnico do aluno.",
+            visible: hasPermission(session.user.role, "viewTrainings"),
+          },
+          {
+            href: "/dashboard/pedidos",
+            title: "Meus pedidos",
+            description: "Historico de compra, entrega e status do e-commerce.",
+            visible: hasPermission(session.user.role, "viewStoreOrders"),
+          },
+          {
+            href: "/dashboard/avisos",
+            title: "Avisos",
+            description: "Comunicados publicados para o seu perfil.",
+            visible: hasPermission(session.user.role, "viewAnnouncements"),
+          },
+        ]
+      : [
+          {
+            href: "/dashboard/alunos",
+            title: "Alunos",
+            description: "Cadastros, status e vinculos principais.",
+            visible: hasPermission(session.user.role, "viewStudents"),
+          },
+          {
+            href: "/dashboard/professores",
+            title: "Professores",
+            description: "Equipe docente e modalidades ensinadas.",
+            visible: hasPermission(session.user.role, "viewTeachers"),
+          },
+          {
+            href: "/dashboard/modalidades",
+            title: "Modalidades",
+            description: "Catalogo operacional da academia.",
+            visible: hasPermission(session.user.role, "viewModalities"),
+          },
+          {
+            href: "/dashboard/turmas",
+            title: "Turmas",
+            description: "Grade, horarios e vinculos de alunos.",
+            visible: hasPermission(session.user.role, "viewClassSchedules"),
+          },
+          {
+            href: "/dashboard/presenca",
+            title: "Presenca",
+            description: "Check-in, check-out e historico filtrado.",
+            visible: hasPermission(session.user.role, "viewAttendance"),
+          },
+          {
+            href: "/dashboard/planos",
+            title: "Planos",
+            description: "Catalogo comercial e recorrencias.",
+            visible: hasPermission(session.user.role, "viewPlans"),
+          },
+          {
+            href: "/dashboard/assinaturas",
+            title: "Assinaturas",
+            description: "Contratos, renovacoes e vinculos financeiros.",
+            visible: hasPermission(session.user.role, "viewSubscriptions"),
+          },
+          {
+            href: "/dashboard/pagamentos",
+            title: "Pagamentos",
+            description: "Mensalidades, vencimentos e inadimplencia.",
+            visible: hasPermission(session.user.role, "viewPayments"),
+          },
+          {
+            href: "/dashboard/treinos",
+            title: "Treinos",
+            description: "Modelos, atribuicoes e historico tecnico.",
+            visible: hasPermission(session.user.role, "viewTrainings"),
+          },
+          {
+            href: "/dashboard/produtos",
+            title: "Produtos",
+            description: "Cadastro, vitrine e estoque da loja da academia.",
+            visible: hasPermission(session.user.role, "viewProducts"),
+          },
+          {
+            href: "/dashboard/pedidos",
+            title: "Meus pedidos",
+            description: "Historico de compra, entrega e status do e-commerce.",
+            visible: hasPermission(session.user.role, "viewStoreOrders"),
+          },
+          {
+            href: "/dashboard/pedidos-loja",
+            title: "Pedidos da loja",
+            description: "Operacao administrativa de checkout, separacao e envio.",
+            visible: hasPermission(session.user.role, "manageStoreOrders"),
+          },
+          {
+            href: "/dashboard/cupons",
+            title: "Cupons",
+            description: "Campanhas promocionais, regras e limites do catalogo.",
+            visible: hasPermission(session.user.role, "manageCoupons"),
+          },
+          {
+            href: "/dashboard/avisos",
+            title: "Avisos",
+            description: "Comunicados operacionais e mensagens da academia.",
+            visible: hasPermission(session.user.role, "viewAnnouncements"),
+          },
+          {
+            href: "/dashboard/relatorios",
+            title: "Relatorios",
+            description: "Indicadores operacionais, financeiros e exportacao CSV.",
+            visible: hasPermission(session.user.role, "viewReports"),
+          },
+          {
+            href: "/dashboard/admin",
+            title: "Area administrativa",
+            description: "Painel analitico com auditoria, estoque e visao executiva.",
+            visible: hasPermission(session.user.role, "accessAdminEndpoints"),
+          },
+        ]
+  ).filter((item) => item.visible);
+
+  const moduleSectionTitle =
+    session.user.role === UserRole.ALUNO
+      ? "Atalhos do aluno"
+      : "Modulos operacionais";
+  const moduleSectionDescription =
+    session.user.role === UserRole.ALUNO
+      ? "Acesse somente as areas do painel que fazem sentido para o seu acompanhamento."
+      : "Atalhos do painel liberados para o seu perfil.";
 
   if (session.user.role === UserRole.ALUNO) {
-    const studentProfile = await prisma.studentProfile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        id: true,
-        registrationNumber: true,
-        status: true,
-      },
-    });
-
-    if (!studentProfile) {
+    if (!viewer.studentProfileId) {
       profileNotice =
         "Sua conta esta autenticada, mas ainda nao tem StudentProfile vinculado. Revise o seed ou o fluxo de cadastro.";
     } else {
-      const [financialSnapshot, performanceSnapshot] =
-        await Promise.all([
-          getStudentFinancialSnapshot(viewer),
-          getStudentPerformanceSnapshot(viewer),
-        ]);
+      const financialSnapshot = await getStudentFinancialSnapshot(viewer);
+      const performanceSnapshot = await getStudentPerformanceSnapshot(viewer);
+      const studentProfile = performanceSnapshot.studentProfile;
 
       studentFinancialSnapshot = financialSnapshot;
       studentPerformanceSnapshot = performanceSnapshot;
@@ -1281,9 +1324,9 @@ export default async function DashboardPage() {
       <section className="rounded-3xl border border-brand-gray-mid bg-brand-gray-dark p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white">Modulos operacionais</h2>
+            <h2 className="text-xl font-bold text-white">{moduleSectionTitle}</h2>
             <p className="mt-1 text-sm text-brand-gray-light">
-              Atalhos do painel liberados para o seu perfil.
+              {moduleSectionDescription}
             </p>
           </div>
           <div className="rounded-full border border-brand-gray-mid px-3 py-1 text-xs text-brand-gray-light">
@@ -1325,44 +1368,71 @@ export default async function DashboardPage() {
             Nenhum aviso publicado para o seu perfil neste momento.
           </p>
         ) : (
-          <div className="mt-6 space-y-4">
-            {announcements.map((announcement) => (
-              <Link
-                key={announcement.id}
-                href={`/dashboard/avisos/${announcement.id}`}
-                className="rounded-2xl border border-brand-gray-mid bg-brand-black/40 p-4"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-semibold text-white">
+          <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {announcements.map((announcement) => {
+              const expired = Boolean(
+                announcement.expiresAt &&
+                  announcement.expiresAt.getTime() <= Date.now(),
+              );
+
+              return (
+                <Link
+                  key={announcement.id}
+                  href={`/dashboard/avisos/${announcement.id}`}
+                  className="group block rounded-3xl border border-brand-gray-mid bg-brand-black/40 p-5 transition hover:border-brand-red/40 hover:bg-brand-black/60"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge
+                      tone={getAnnouncementTone({
+                        isPinned: announcement.isPinned,
+                        isPublished: announcement.isPublished,
+                        expired,
+                      })}
+                    >
+                      {announcement.isPublished
+                        ? expired
+                          ? "Expirado"
+                          : "Publicado"
+                        : "Rascunho"}
+                    </StatusBadge>
+                    {announcement.isPinned ? (
+                      <StatusBadge tone="warning">Fixado</StatusBadge>
+                    ) : null}
+                    <StatusBadge tone="info">
+                      {getAnnouncementTargetLabel(announcement.targetRole)}
+                    </StatusBadge>
+                  </div>
+
+                  <h3 className="mt-4 line-clamp-2 text-lg font-bold text-white transition group-hover:text-brand-red">
                     {announcement.title}
                   </h3>
-                  <StatusBadge
-                    tone={getAnnouncementTone({
-                      isPinned: announcement.isPinned,
-                      isPublished: announcement.isPublished,
-                      expired: Boolean(
-                        announcement.expiresAt &&
-                          announcement.expiresAt.getTime() <= Date.now(),
-                      ),
-                    })}
-                  >
-                    {announcement.isPinned ? "Fixado" : getAnnouncementTargetLabel(announcement.targetRole)}
-                  </StatusBadge>
-                </div>
-                {announcement.excerpt ? (
-                  <p className="mt-2 text-sm text-brand-gray-light">
-                    {announcement.excerpt}
+
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-brand-gray-light">
+                    {announcement.excerpt ?? "Abra o aviso para ver o comunicado completo."}
                   </p>
-                ) : null}
-                <p className="mt-3 text-xs text-brand-gray-light">
-                  Publicado em{" "}
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  }).format(announcement.publishedAt ?? announcement.createdAt)}
-                </p>
-              </Link>
-            ))}
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 border-t border-brand-gray-mid/70 pt-4 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-brand-gray-mid bg-brand-black/30 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-brand-gray-light">
+                        Publicado em
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {formatDate(announcement.publishedAt ?? announcement.createdAt)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-brand-gray-mid bg-brand-black/30 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-brand-gray-light">
+                        Expira em
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {announcement.expiresAt ? formatDate(announcement.expiresAt) : "Sem prazo"}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>

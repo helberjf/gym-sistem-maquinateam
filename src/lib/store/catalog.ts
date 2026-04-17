@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { cache } from "react";
 import { ProductStatus } from "@prisma/client";
 import type { z } from "zod";
 import { isLowStockProduct } from "@/lib/commerce/constants";
@@ -558,7 +559,75 @@ function buildFallbackCatalogData(filters: CatalogFilters) {
   };
 }
 
-export async function getFeaturedStoreProducts(limit = 4) {
+function buildFallbackCatalogPageData(
+  filters: CatalogFilters,
+  options?: {
+    page?: number;
+    limit?: number;
+  },
+) {
+  const data = buildFallbackCatalogData(filters);
+  const limit = Math.max(1, options?.limit ?? STORE_CATALOG_PAGE_SIZE);
+  const page = Math.max(1, options?.page ?? 1);
+  const pagination = buildCatalogPagination({
+    totalItems: data.products.length,
+    page,
+    limit,
+  });
+  const startIndex = (pagination.page - 1) * pagination.limit;
+  const endIndex = startIndex + pagination.limit;
+
+  return {
+    ...data,
+    products: data.products.slice(startIndex, endIndex),
+    pagination,
+  };
+}
+
+function buildAvailabilityWhere(filters: CatalogFilters): Prisma.ProductWhereInput | null {
+  if (filters.availability === "in_stock") {
+    return {
+      OR: [
+        {
+          trackInventory: false,
+        },
+        {
+          stockQuantity: {
+            gt: 0,
+          },
+        },
+      ],
+    };
+  }
+
+  if (filters.availability === "low_stock") {
+    return null;
+  }
+
+  return {};
+}
+
+const getStoreCatalogCategories = cache(async function getStoreCatalogCategories() {
+  const categories = await prisma.product.findMany({
+    where: {
+      storeVisible: true,
+      status: {
+        not: ProductStatus.ARCHIVED,
+      },
+    },
+    distinct: ["category"],
+    orderBy: {
+      category: "asc",
+    },
+    select: {
+      category: true,
+    },
+  });
+
+  return categories.map((entry) => entry.category);
+});
+
+export const getFeaturedStoreProducts = cache(async function getFeaturedStoreProducts(limit = 4) {
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -591,32 +660,16 @@ export async function getFeaturedStoreProducts(limit = 4) {
   }
 
   return sortCatalogProducts(FALLBACK_STORE_PRODUCTS, "featured").slice(0, limit);
-}
+});
 
 export async function getStoreCatalogData(filters: CatalogFilters) {
   try {
-    const [products, categories] = await Promise.all([
-      prisma.product.findMany({
-        where: getPublicProductWhere(filters),
-        orderBy: getCatalogOrderBy(filters.sort as CatalogSortValue),
-        select: publicProductCardSelect,
-      }),
-      prisma.product.findMany({
-        where: {
-          storeVisible: true,
-          status: {
-            not: ProductStatus.ARCHIVED,
-          },
-        },
-        distinct: ["category"],
-        orderBy: {
-          category: "asc",
-        },
-        select: {
-          category: true,
-        },
-      }),
-    ]);
+    const products = await prisma.product.findMany({
+      where: getPublicProductWhere(filters),
+      orderBy: getCatalogOrderBy(filters.sort as CatalogSortValue),
+      select: publicProductCardSelect,
+    });
+    const categories = await getStoreCatalogCategories();
 
     const filteredProducts = (products as StoreCatalogProductCard[]).filter((product) =>
       matchesAvailability(product, filters.availability),
@@ -628,7 +681,7 @@ export async function getStoreCatalogData(filters: CatalogFilters) {
 
     return {
       products: filteredProducts,
-      categories: categories.map((entry) => entry.category),
+      categories,
       summary: buildCatalogSummary(filteredProducts),
       source: "live" as const,
     };
@@ -645,25 +698,109 @@ export async function getStoreCatalogPageData(
     limit?: number;
   },
 ) {
-  const data = await getStoreCatalogData(filters);
   const limit = Math.max(1, options?.limit ?? STORE_CATALOG_PAGE_SIZE);
   const page = Math.max(1, options?.page ?? 1);
-  const pagination = buildCatalogPagination({
-    totalItems: data.products.length,
-    page,
-    limit,
-  });
-  const startIndex = (pagination.page - 1) * pagination.limit;
-  const endIndex = startIndex + pagination.limit;
 
-  return {
-    ...data,
-    products: data.products.slice(startIndex, endIndex),
-    pagination,
-  };
+  if (filters.availability === "low_stock") {
+    const data = await getStoreCatalogData(filters);
+    const pagination = buildCatalogPagination({
+      totalItems: data.products.length,
+      page,
+      limit,
+    });
+    const startIndex = (pagination.page - 1) * pagination.limit;
+    const endIndex = startIndex + pagination.limit;
+
+    return {
+      ...data,
+      products: data.products.slice(startIndex, endIndex),
+      pagination,
+    };
+  }
+
+  try {
+    const where = getPublicProductWhere(filters);
+    const availabilityWhere = buildAvailabilityWhere(filters);
+    const liveWhere =
+      availabilityWhere && Object.keys(availabilityWhere).length > 0
+        ? {
+            AND: [where, availabilityWhere],
+          }
+        : where;
+
+    const [totalItems, featuredProducts, inStockProducts, products] =
+      await prisma.$transaction([
+        prisma.product.count({
+          where: liveWhere,
+        }),
+        prisma.product.count({
+          where: {
+            AND: [liveWhere, { featured: true }],
+          },
+        }),
+        prisma.product.count({
+          where: {
+            AND: [
+              liveWhere,
+              {
+                OR: [
+                  {
+                    trackInventory: false,
+                  },
+                  {
+                    stockQuantity: {
+                      gt: 0,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+        prisma.product.findMany({
+          where: liveWhere,
+          orderBy: getCatalogOrderBy(filters.sort as CatalogSortValue),
+          skip: Math.max(0, (page - 1) * limit),
+          take: limit,
+          select: publicProductCardSelect,
+        }),
+      ]);
+
+    if (totalItems === 0 && isCatalogFilterDefault(filters)) {
+      return buildFallbackCatalogPageData(filters, {
+        page,
+        limit,
+      });
+    }
+
+    const categories = await getStoreCatalogCategories();
+    const pagination = buildCatalogPagination({
+      totalItems,
+      page,
+      limit,
+    });
+
+    return {
+      products: products as StoreCatalogProductCard[],
+      categories,
+      summary: {
+        totalProducts: totalItems,
+        featuredProducts,
+        inStockProducts,
+      },
+      source: "live" as const,
+      pagination,
+    };
+  } catch (error) {
+    console.error("Falha ao carregar o catalogo paginado da loja.", error);
+    return buildFallbackCatalogPageData(filters, {
+      page,
+      limit,
+    });
+  }
 }
 
-export async function getStoreProductDetail(slug: string) {
+export const getStoreProductDetail = cache(async function getStoreProductDetail(slug: string) {
   try {
     const product = await prisma.product.findFirst({
       where: {
@@ -741,6 +878,6 @@ export async function getStoreProductDetail(slug: string) {
     ).slice(0, 4),
     source: "fallback" as const,
   };
-}
+});
 
 export const getFeaturedProducts = getFeaturedStoreProducts;

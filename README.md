@@ -27,7 +27,7 @@ O produto agora entrega:
 - Prisma ORM
 - Auth.js v5
 - bcryptjs
-- Mailgun
+- Resend
 - Upstash Redis
 - Mercado Pago
 - AbacatePay
@@ -139,7 +139,7 @@ Cada modulo concentra regras, filtros, consultas e mutacoes sem jogar tudo dentr
 - `src/lib/validators`: validacao centralizada com Zod
 - `src/lib/errors`: respostas e erros consistentes
 - `src/lib/audit`: trilha minima de auditoria
-- `src/lib/mail`: envio de e-mails com Mailgun
+- `src/lib/mail`: envio de e-mails com Resend
 - `src/lib/uploads`: integracao com Cloudflare R2
 
 ### 3. Banco e persistencia
@@ -321,10 +321,10 @@ Variaveis principais:
 - `NEXTAUTH_URL`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
-- `MAILGUN_API_KEY`
-- `MAILGUN_DOMAIN`
-- `MAILGUN_FROM`
-- `MAILGUN_API_BASE_URL`
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+- `RESEND_FROM_NAME`
+- `RESEND_FROM_EMAIL`
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 - `MP_ACCESS_TOKEN`
@@ -435,18 +435,21 @@ https://seu-dominio.vercel.app/api/auth/callback/google
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 
-## Mailgun
+## Resend
 
 Para e-mail transacional:
 
-1. configure dominio no Mailgun
-2. valide remetente
+1. adicione e verifique um dominio no Resend
+2. configure um remetente desse dominio
 3. preencha:
 
-- `MAILGUN_API_KEY`
-- `MAILGUN_DOMAIN`
-- `MAILGUN_FROM`
-- `MAILGUN_API_BASE_URL`
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+
+Observacao importante:
+
+- sem dominio verificado no Resend, o envio real para outros destinatarios nao funciona
+- o healthcheck `GET /api/health` agora mostra se a configuracao de mail esta incompleta
 
 Fluxos cobertos:
 
@@ -491,7 +494,7 @@ Passos recomendados:
 4. aponte `AUTH_URL` e `NEXT_PUBLIC_APP_URL` para o dominio final
 5. configure PostgreSQL de producao
 6. configure Upstash Redis para rate limit distribuido
-7. configure bucket R2 e Mailgun
+7. configure bucket R2 e Resend
 8. rode migrate/seed no ambiente adequado
 
 Observacoes:

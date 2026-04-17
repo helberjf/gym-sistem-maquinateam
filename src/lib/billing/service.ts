@@ -1879,71 +1879,68 @@ export async function getStudentFinancialSnapshot(viewer: ViewerContext) {
   }
 
   const today = startOfDay();
-
-  const [activeSubscription, nextPayment, recentPayments] = await prisma.$transaction([
-    prisma.subscription.findFirst({
-      where: {
-        studentProfileId: viewer.studentProfileId,
-        status: {
-          in: [
-            SubscriptionStatus.ACTIVE,
-            SubscriptionStatus.PAST_DUE,
-            SubscriptionStatus.PENDING,
-            SubscriptionStatus.PAUSED,
-          ],
+  const activeSubscription = await prisma.subscription.findFirst({
+    where: {
+      studentProfileId: viewer.studentProfileId,
+      status: {
+        in: [
+          SubscriptionStatus.ACTIVE,
+          SubscriptionStatus.PAST_DUE,
+          SubscriptionStatus.PENDING,
+          SubscriptionStatus.PAUSED,
+        ],
+      },
+    },
+    orderBy: [{ createdAt: "desc" }],
+    select: {
+      id: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      autoRenew: true,
+      renewalDay: true,
+      priceCents: true,
+      discountCents: true,
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          priceCents: true,
+          billingIntervalMonths: true,
         },
       },
-      orderBy: [{ createdAt: "desc" }],
-      select: {
-        id: true,
-        status: true,
-        startDate: true,
-        endDate: true,
-        autoRenew: true,
-        renewalDay: true,
-        priceCents: true,
-        discountCents: true,
-        plan: {
-          select: {
-            id: true,
-            name: true,
-            priceCents: true,
-            billingIntervalMonths: true,
-          },
-        },
-      },
-    }),
-    prisma.payment.findFirst({
-      where: {
-        studentProfileId: viewer.studentProfileId,
-        status: PaymentStatus.PENDING,
-      },
-      orderBy: [{ dueDate: "asc" }],
-      select: {
-        id: true,
-        amountCents: true,
-        dueDate: true,
-        status: true,
-        method: true,
-      },
-    }),
-    prisma.payment.findMany({
-      where: {
-        studentProfileId: viewer.studentProfileId,
-      },
-      orderBy: [{ dueDate: "desc" }, { createdAt: "desc" }],
-      take: 6,
-      select: {
-        id: true,
-        amountCents: true,
-        status: true,
-        method: true,
-        dueDate: true,
-        paidAt: true,
-        description: true,
-      },
-    }),
-  ]);
+    },
+  });
+  const nextPayment = await prisma.payment.findFirst({
+    where: {
+      studentProfileId: viewer.studentProfileId,
+      status: PaymentStatus.PENDING,
+    },
+    orderBy: [{ dueDate: "asc" }],
+    select: {
+      id: true,
+      amountCents: true,
+      dueDate: true,
+      status: true,
+      method: true,
+    },
+  });
+  const recentPayments = await prisma.payment.findMany({
+    where: {
+      studentProfileId: viewer.studentProfileId,
+    },
+    orderBy: [{ dueDate: "desc" }, { createdAt: "desc" }],
+    take: 6,
+    select: {
+      id: true,
+      amountCents: true,
+      status: true,
+      method: true,
+      dueDate: true,
+      paidAt: true,
+      description: true,
+    },
+  });
 
   const hasOverdueOpenPayment = nextPayment
     ? isPaymentOverdue(nextPayment.status, nextPayment.dueDate, today)

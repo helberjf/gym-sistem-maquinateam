@@ -18,6 +18,7 @@ type SessionUserShape = {
   id?: string;
   role?: UserRole;
   emailVerified?: Date | string | null;
+  isActive?: boolean;
 };
 
 function getAuthErrorType(error: unknown) {
@@ -153,6 +154,7 @@ export const authConfig: NextAuthConfig = {
         (user as SessionUserShape).id = dbUser.id;
         (user as SessionUserShape).role = dbUser.role;
         (user as SessionUserShape).emailVerified = dbUser.emailVerified;
+        (user as SessionUserShape).isActive = dbUser.isActive;
       }
 
       return true;
@@ -165,6 +167,16 @@ export const authConfig: NextAuthConfig = {
           emailVerified instanceof Date
             ? emailVerified.toISOString()
             : emailVerified ?? null;
+        token.isActive = (user as SessionUserShape).isActive ?? true;
+        return token;
+      }
+
+      if (
+        token.role !== undefined &&
+        token.emailVerified !== undefined &&
+        token.isActive !== undefined
+      ) {
+        return token;
       }
 
       if (token.sub) {

@@ -92,10 +92,53 @@ export function ProductsInfiniteGrid({
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
+  const favoriteIdSet = new Set(favoriteIds);
 
   useEffect(() => {
     loadingMoreRef.current = loadingMore;
   }, [loadingMore]);
+
+  useEffect(() => {
+    if (!interactiveEnabled) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void fetch("/api/store/wishlist", {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+
+        return (await response.json().catch(() => null)) as
+          | {
+              ok?: boolean;
+              authenticated?: boolean;
+              productIds?: string[];
+            }
+          | null;
+      })
+      .then((payload) => {
+        if (
+          cancelled ||
+          !payload?.ok ||
+          !payload.authenticated ||
+          !Array.isArray(payload.productIds)
+        ) {
+          return;
+        }
+
+        setFavoriteIds(payload.productIds);
+      })
+      .catch(() => null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [interactiveEnabled]);
 
   useEffect(() => {
     if (!pagination.hasMore || !sentinelRef.current) {
@@ -179,7 +222,7 @@ export function ProductsInfiniteGrid({
           <StoreProductCard
             key={product.id}
             product={product}
-            initialIsFavorite={favoriteIds.includes(product.id)}
+            initialIsFavorite={favoriteIdSet.has(product.id)}
             interactiveEnabled={interactiveEnabled}
           />
         ))}

@@ -18,13 +18,14 @@ NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 # modo produtos-only: use false para ocultar e bloquear servicos, agendamentos e consultoria
 NEXT_PUBLIC_ENABLE_SERVICES="true"
 
-## MAILGUN (emails)
-MAILGUN_API_KEY=""
-MAILGUN_DOMAIN=""
-MAILGUN_FROM="Mailgun Sandbox <postmaster@domain>"
-MAILGUN_API_BASE_URL="https://api.mailgun.net"
-MAILGUN_FROM_NAME="Seu App"
-MAILGUN_FROM_EMAIL="no-reply@domain"
+## RESEND (emails)
+# Obrigatorio: chave do Resend
+RESEND_API_KEY=""
+# Obrigatorio: remetente usando um dominio ja verificado no Resend
+RESEND_FROM="Seu App <no-reply@seudominio.com>"
+# Opcional: alternativa ao RESEND_FROM completo
+RESEND_FROM_NAME="Seu App"
+RESEND_FROM_EMAIL="no-reply@seudominio.com"
 CONTACT_EMAIL="contato@dominio.com"
 
 ## MERCADOPAGO

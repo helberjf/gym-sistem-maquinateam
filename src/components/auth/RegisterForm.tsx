@@ -9,17 +9,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { sanitizeCallbackUrl } from "@/lib/auth/callback-url";
 import { registerSchema, type RegisterInput } from "@/lib/auth/validation";
-import {
-  authInputClassName,
-  authPrimaryButtonClassName,
-} from "@/components/auth/styles";
 
 function GoogleLogo() {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-4.5 w-4.5 shrink-0"
+      className="h-4 w-4 shrink-0"
     >
       <path
         fill="#4285F4"
@@ -119,11 +115,17 @@ export function RegisterForm({ googleEnabled }: RegisterFormProps) {
     void signIn("google", { callbackUrl });
   }
 
+  const baseInputClassName =
+    "w-full rounded-md border px-2 py-1 text-[12px] disabled:opacity-60";
+  const inputClassName = `${baseInputClassName} border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100`;
+  const labelClassName = "text-[10px] text-neutral-600 dark:text-neutral-400";
+  const errorClassName = "text-[10px] text-red-600";
+
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="name" className="text-sm text-brand-gray-light">
+    <div className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-1">
+        <div className="space-y-px">
+          <label htmlFor="name" className={labelClassName}>
             Nome completo
           </label>
           <input
@@ -131,17 +133,15 @@ export function RegisterForm({ googleEnabled }: RegisterFormProps) {
             type="text"
             autoComplete="name"
             placeholder="Seu nome"
-            className={authInputClassName}
+            className={inputClassName}
             disabled={loading || googleLoading}
             {...register("name")}
           />
-          {errors.name && (
-            <p className="text-xs text-brand-white">{errors.name.message}</p>
-          )}
+          {errors.name && <p className={errorClassName}>{errors.name.message}</p>}
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm text-brand-gray-light">
+        <div className="space-y-px">
+          <label htmlFor="email" className={labelClassName}>
             E-mail
           </label>
           <input
@@ -149,17 +149,15 @@ export function RegisterForm({ googleEnabled }: RegisterFormProps) {
             type="email"
             autoComplete="email"
             placeholder="seu@email.com"
-            className={authInputClassName}
+            className={inputClassName}
             disabled={loading || googleLoading}
             {...register("email")}
           />
-          {errors.email && (
-            <p className="text-xs text-brand-white">{errors.email.message}</p>
-          )}
+          {errors.email && <p className={errorClassName}>{errors.email.message}</p>}
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="password" className="text-sm text-brand-gray-light">
+        <div className="space-y-px">
+          <label htmlFor="password" className={labelClassName}>
             Senha
           </label>
           <input
@@ -167,17 +165,17 @@ export function RegisterForm({ googleEnabled }: RegisterFormProps) {
             type="password"
             autoComplete="new-password"
             placeholder="Minimo de 8 caracteres"
-            className={authInputClassName}
+            className={inputClassName}
             disabled={loading || googleLoading}
             {...register("password")}
           />
           {errors.password && (
-            <p className="text-xs text-brand-white">{errors.password.message}</p>
+            <p className={errorClassName}>{errors.password.message}</p>
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="confirmPassword" className="text-sm text-brand-gray-light">
+        <div className="space-y-px">
+          <label htmlFor="confirmPassword" className={labelClassName}>
             Confirmar senha
           </label>
           <input
@@ -185,36 +183,32 @@ export function RegisterForm({ googleEnabled }: RegisterFormProps) {
             type="password"
             autoComplete="new-password"
             placeholder="Repita sua senha"
-            className={authInputClassName}
+            className={inputClassName}
             disabled={loading || googleLoading}
             {...register("confirmPassword")}
           />
           {errors.confirmPassword && (
-            <p className="text-xs text-brand-white">{errors.confirmPassword.message}</p>
+            <p className={errorClassName}>{errors.confirmPassword.message}</p>
           )}
         </div>
 
-        {serverError && (
-          <div className="rounded-xl border border-brand-gray-light/20 bg-brand-black/70 px-4 py-3 text-sm text-brand-white">
-            {serverError}
-          </div>
-        )}
+        {serverError && <p className={errorClassName}>{serverError}</p>}
 
         <button
           type="submit"
           disabled={loading || googleLoading}
-          className={authPrimaryButtonClassName}
+          className="w-full rounded-md bg-blue-600 py-1.5 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
           {loading ? "Criando conta..." : "Criar conta"}
         </button>
       </form>
 
-      <div className="relative">
+      <div className="relative my-2">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-brand-gray-mid" />
+          <span className="w-full border-t border-neutral-300 dark:border-neutral-700" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
-          <span className="bg-brand-gray-dark px-3 text-brand-gray-light">
+        <div className="relative flex justify-center text-[11px] uppercase">
+          <span className="bg-white px-2 text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
             ou continue com
           </span>
         </div>
@@ -225,26 +219,26 @@ export function RegisterForm({ googleEnabled }: RegisterFormProps) {
           type="button"
           onClick={handleGoogleSignup}
           disabled={loading || googleLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-semibold text-neutral-800 transition-all hover:bg-neutral-100 hover:shadow-sm disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-4 py-1.5 text-sm font-medium text-neutral-800 transition-all hover:bg-neutral-100 hover:shadow-sm disabled:opacity-60"
         >
           {googleLoading ? (
-            <span className="h-4.5 w-4.5 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
           ) : (
             <GoogleLogo />
           )}
           {googleLoading ? "Conectando..." : "Cadastrar com Google"}
         </button>
       ) : (
-        <div className="rounded-xl border border-brand-gray-mid bg-brand-black/60 px-4 py-3 text-sm text-brand-gray-light">
+        <div className="rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
           Cadastro com Google disponivel assim que{" "}
-          <code className="text-brand-white">GOOGLE_CLIENT_ID</code> e{" "}
-          <code className="text-brand-white">GOOGLE_CLIENT_SECRET</code> forem configurados.
+          <code className="text-neutral-800 dark:text-neutral-100">GOOGLE_CLIENT_ID</code> e{" "}
+          <code className="text-neutral-800 dark:text-neutral-100">GOOGLE_CLIENT_SECRET</code> forem configurados.
         </div>
       )}
 
-      <p className="text-center text-sm text-brand-gray-light">
+      <p className="text-center text-[10px] text-neutral-500 dark:text-neutral-400">
         Ja tem conta?{" "}
-        <Link href="/login" className="text-brand-red hover:underline">
+        <Link href="/login" className="text-blue-600 hover:underline">
           Entrar
         </Link>
       </p>

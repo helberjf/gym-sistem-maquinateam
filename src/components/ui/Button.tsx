@@ -1,7 +1,7 @@
 import { Slot } from '@radix-ui/react-slot';
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline-dark';
 type Size = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,6 +20,8 @@ const variantClasses: Record<Variant, string> = {
     'bg-transparent hover:bg-brand-gray-mid text-brand-gray-light hover:text-brand-white border-transparent',
   danger:
     'bg-brand-gray-mid hover:bg-brand-gray-light/30 text-white border-transparent',
+  'outline-dark':
+    'bg-transparent hover:bg-black/5 text-black border-black/15',
 };
 
 const sizeClasses: Record<Size, string> = {

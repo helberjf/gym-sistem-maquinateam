@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { refreshPublicViewer } from "@/components/public/usePublicViewer";
 import { Button } from "@/components/ui/Button";
 
 type AddToCartButtonProps = {
@@ -57,11 +58,10 @@ export function AddToCartButton({
       }
 
       toast.success(payload.message ?? "Produto adicionado ao carrinho.");
+      void refreshPublicViewer();
 
       if (redirectToCart) {
         router.push("/carrinho");
-      } else {
-        router.refresh();
       }
     } catch {
       toast.error("Nao foi possivel adicionar o item.");

@@ -10,7 +10,6 @@ import {
   STORE_CATALOG_PAGE_SIZE,
 } from "@/lib/store/catalog";
 import { CATALOG_SORT_OPTIONS } from "@/lib/store/constants";
-import { getStoreFavoriteProductIds } from "@/lib/store/favorites";
 import { parseSearchParams } from "@/lib/validators";
 import { catalogFiltersSchema } from "@/lib/validators/store";
 
@@ -42,14 +41,10 @@ export default async function ProductsPage({
     catalogFiltersSchema,
   );
 
-  const [data, favoriteIds] = await Promise.all([
-    getStoreCatalogPageData(filters, {
-      page: 1,
-      limit: STORE_CATALOG_PAGE_SIZE,
-    }),
-    getStoreFavoriteProductIds(),
-  ]);
-  const favoriteIdSet = new Set(favoriteIds);
+  const data = await getStoreCatalogPageData(filters, {
+    page: 1,
+    limit: STORE_CATALOG_PAGE_SIZE,
+  });
   const fallbackMode = data.source === "fallback";
   const productsSchema = {
     "@context": "https://schema.org",
@@ -157,7 +152,7 @@ export default async function ProductsPage({
         ) : (
           <ProductsInfiniteGrid
             initialProducts={data.products}
-            initialFavoriteIds={Array.from(favoriteIdSet)}
+            initialFavoriteIds={[]}
             filters={filters}
             initialPagination={data.pagination}
             interactiveEnabled={!fallbackMode}

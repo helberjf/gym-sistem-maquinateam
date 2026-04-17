@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ShoppingBag, Dumbbell, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { HomeFeaturedProductsPager } from "@/components/public/HomeFeaturedProductsPager";
+import { HomeQuickAccessPanel } from "@/components/public/HomeQuickAccessPanel";
 import { SectionHeading } from "@/components/public/SectionHeading";
 import { StudentTestimonialsCarousel } from "@/components/public/StudentTestimonialsCarousel";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
@@ -118,13 +119,11 @@ function HomePlanPreviewCard({ plan }: { plan: PublicPlanCatalogItem }) {
 type HomeLandingPageProps = {
   featuredPlans: PublicPlanCatalogItem[];
   featuredProducts: StoreCatalogProductCard[];
-  isAuthenticated: boolean;
 };
 
 export function HomeLandingPage({
   featuredPlans,
   featuredProducts,
-  isAuthenticated,
 }: HomeLandingPageProps) {
   return (
     <div className="bg-brand-black">
@@ -132,8 +131,8 @@ export function HomeLandingPage({
       <section className="relative overflow-hidden border-b border-brand-gray-mid">
         <div className="absolute inset-0">
           <Image
-            src="/images/mulher_lutando.jpg"
-            alt="Atleta treinando boxe na Maquina Team"
+            src="/images/instrutor.jpg"
+            alt="Professor Maquininha na Maquina Team"
             fill
             priority
             sizes="100vw"
@@ -325,44 +324,7 @@ export function HomeLandingPage({
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-black/10 bg-black p-4 text-white shadow-[0_18px_45px_rgba(0,0,0,0.18)] sm:p-5">
-              <p className="text-xs uppercase tracking-[0.22em] text-white/55">
-                Acesso rapido
-              </p>
-              <p className="mt-3 text-sm leading-6 text-white/72">
-                Entre para continuar sua rotina ou crie a conta para liberar planos,
-                produtos e painel do aluno.
-              </p>
-
-              <div className="mt-5 flex flex-col gap-3">
-                <Button
-                  asChild
-                  size="lg"
-                  className="w-full rounded-2xl bg-brand-red text-black hover:bg-brand-red-dark"
-                >
-                  <Link href={isAuthenticated ? "/dashboard" : "/login"}>
-                    {isAuthenticated ? "Acessar dashboard" : "Entrar"}
-                  </Link>
-                </Button>
-                {!isAuthenticated ? (
-                  <Link
-                    href="/cadastro"
-                    className="inline-flex w-full items-center justify-center rounded-2xl border border-black bg-black px-6 py-3 text-base font-medium text-white transition hover:bg-neutral-800"
-                  >
-                    Criar conta
-                  </Link>
-                ) : (
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="secondary"
-                    className="w-full rounded-2xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                  >
-                    <Link href="/planos">Ver planos</Link>
-                  </Button>
-                )}
-              </div>
-            </div>
+            <HomeQuickAccessPanel />
           </div>
         </div>
       </section>

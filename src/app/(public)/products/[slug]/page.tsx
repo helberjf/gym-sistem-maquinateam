@@ -17,7 +17,6 @@ import {
   serializeJsonLd,
 } from "@/lib/seo";
 import { getStoreProductDetail } from "@/lib/store/catalog";
-import { getStoreFavoriteProductIds } from "@/lib/store/favorites";
 
 type RouteParams = Promise<{ slug: string }>;
 
@@ -61,11 +60,7 @@ export default async function ProductDetailPage({
 }) {
   try {
     const { slug } = await params;
-    const [data, favoriteIds] = await Promise.all([
-      getStoreProductDetail(slug),
-      getStoreFavoriteProductIds(),
-    ]);
-    const favoriteIdSet = new Set(favoriteIds);
+    const data = await getStoreProductDetail(slug);
     const soldOut = data.product.trackInventory && data.product.stockQuantity <= 0;
     const interactiveEnabled = data.source === "live";
     const productUrl = absoluteUrl(`/products/${data.product.slug}`);
@@ -178,7 +173,7 @@ export default async function ProductDetailPage({
                   <StoreFavoriteButton
                     productId={data.product.id}
                     productName={data.product.name}
-                    initialIsFavorite={favoriteIdSet.has(data.product.id)}
+                    initialIsFavorite={false}
                     variant="inline"
                     disabled={!interactiveEnabled}
                   />
@@ -343,7 +338,7 @@ export default async function ProductDetailPage({
                   <StoreProductCard
                     key={product.id}
                     product={product}
-                    initialIsFavorite={favoriteIdSet.has(product.id)}
+                    initialIsFavorite={false}
                     interactiveEnabled={data.source === "live"}
                   />
                 ))}

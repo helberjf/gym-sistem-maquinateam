@@ -27,6 +27,8 @@ export function getSiteUrl() {
   const rawUrl =
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.AUTH_URL ??
     process.env.NEXTAUTH_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??
     process.env.VERCEL_URL ??
@@ -93,13 +95,13 @@ export function buildPublicMetadata({
     description,
     keywords: mergeKeywords(keywords),
     alternates: {
-      canonical: canonicalPath,
+      canonical: absoluteUrl(canonicalPath),
     },
     openGraph: {
       type,
       locale: "pt_BR",
       siteName: BRAND.name,
-      url: canonicalPath,
+      url: absoluteUrl(canonicalPath),
       title,
       description,
       images: openGraphImages,

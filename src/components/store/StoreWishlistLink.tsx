@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { getStoreWishlistSummary } from "@/lib/store/favorites";
 
 type StoreWishlistLinkProps = {
+  count: number;
   mobile?: boolean;
 };
 
-export async function StoreWishlistLink({
+export function StoreWishlistLink({
+  count,
   mobile = false,
 }: StoreWishlistLinkProps) {
-  const wishlist = await getStoreWishlistSummary();
-  const count = wishlist.count;
-
   if (mobile) {
     return (
       <Link

@@ -4,7 +4,6 @@ import { PlanCheckoutButton } from "@/components/public/PlanCheckoutButton";
 import { PublicPlanCard } from "@/components/public/PublicPlanCard";
 import { SectionHeading } from "@/components/public/SectionHeading";
 import { Button } from "@/components/ui/Button";
-import { getOptionalSession } from "@/lib/auth/session";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
 import {
   getPublicPlanSections,
@@ -31,10 +30,8 @@ export const revalidate = 120;
 
 function RecommendedFullPlanCard({
   plan,
-  isAuthenticated,
 }: {
   plan: PublicPlanCatalogItem;
-  isAuthenticated: boolean;
 }) {
   const isRecommended = plan.isRecommended;
 
@@ -43,37 +40,37 @@ function RecommendedFullPlanCard({
       className={[
         "flex h-full flex-col rounded-[2rem] border p-5 sm:p-6",
         isRecommended
-          ? "border-white bg-white text-black shadow-[0_18px_60px_rgba(255,255,255,0.08)]"
-          : "border-[#e2b34d] bg-[#f5e2a8] text-black shadow-[0_18px_60px_rgba(226,179,77,0.14)]",
+          ? "border-white/18 bg-[linear-gradient(180deg,#1b1b1b_0%,#0e0e0e_100%)] text-white shadow-[0_22px_80px_rgba(0,0,0,0.34)]"
+          : "border-[#e2b34d]/55 bg-[radial-gradient(circle_at_top,rgba(226,179,77,0.18),transparent_34%),linear-gradient(180deg,#1e1608_0%,#0b0b0b_56%,#050505_100%)] text-white shadow-[0_24px_90px_rgba(226,179,77,0.16)]",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-black/60">
+          <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
             {isRecommended ? "Plano recomendado" : "Condicao especial"}
           </p>
           <h3 className="mt-3 text-2xl font-bold uppercase sm:text-3xl">
             {plan.name}
           </h3>
         </div>
-        <span className="rounded-full bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
+        <span className="rounded-full border border-[#e2b34d]/40 bg-[#e2b34d]/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#f3d98d]">
           {isRecommended ? "FULL" : "SOCIAL"}
         </span>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-black/70">
+      <p className="mt-4 text-sm leading-6 text-brand-gray-light">
         {plan.description}
       </p>
 
       <div className="mt-6">
-        <p className="text-xs uppercase tracking-[0.24em] text-black/60">
+        <p className="text-xs uppercase tracking-[0.24em] text-brand-gray-light">
           Qualquer dia e horario
         </p>
         <p className="mt-2 text-4xl font-bold leading-none sm:text-5xl">
           {formatCurrencyFromCents(plan.monthlyEquivalentCents)}
         </p>
-        <p className="mt-2 text-sm text-black/70">por mes</p>
-        <p className="mt-3 text-sm text-black/70">
+        <p className="mt-2 text-sm text-brand-gray-light">por mes</p>
+        <p className="mt-3 text-sm text-brand-gray-light">
           Cobranca: {formatCurrencyFromCents(plan.priceCents)}
           {plan.fullVariant === "social"
             ? " com validacao comercial"
@@ -81,17 +78,17 @@ function RecommendedFullPlanCard({
         </p>
       </div>
 
-      <ul className="mt-6 space-y-3 text-sm text-black/80">
+      <ul className="mt-6 space-y-3 text-sm text-brand-gray-light">
         {(plan.benefits ?? []).slice(0, 3).map((benefit) => (
           <li key={benefit} className="flex gap-3">
-            <span className="text-black">+</span>
+            <span className="text-[#f3d98d]">+</span>
             <span>{benefit}</span>
           </li>
         ))}
       </ul>
 
       {plan.fullVariant === "social" ? (
-        <p className="mt-5 rounded-2xl border border-black/10 bg-black/[0.04] px-4 py-3 text-xs uppercase tracking-[0.14em] text-black/70">
+        <p className="mt-5 rounded-2xl border border-[#e2b34d]/20 bg-[#e2b34d]/8 px-4 py-3 text-xs uppercase tracking-[0.14em] text-[#f3d98d]">
           Consulte a equipe antes de contratar essa condicao.
         </p>
       ) : null}
@@ -99,10 +96,9 @@ function RecommendedFullPlanCard({
       <div className="mt-8">
         <PlanCheckoutButton
           planId={plan.id}
-          isAuthenticated={isAuthenticated}
           callbackUrl="/planos"
-          tone="light"
-          className="w-full bg-black text-white hover:bg-black/90"
+          tone="dark"
+          className="w-full shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
         />
       </div>
     </article>
@@ -111,10 +107,8 @@ function RecommendedFullPlanCard({
 
 function RecommendedFullSection({
   plans,
-  isAuthenticated,
 }: {
   plans: PublicPlanCatalogItem[];
-  isAuthenticated: boolean;
 }) {
   if (plans.length === 0) {
     return null;
@@ -196,7 +190,6 @@ function RecommendedFullSection({
               <RecommendedFullPlanCard
                 key={plan.id}
                 plan={plan}
-                isAuthenticated={isAuthenticated}
               />
             ))}
           </div>
@@ -208,10 +201,8 @@ function RecommendedFullSection({
 
 function PlanPeriodSection({
   section,
-  isAuthenticated,
 }: {
   section: PublicPlanSection;
-  isAuthenticated: boolean;
 }) {
   return (
     <section>
@@ -228,7 +219,6 @@ function PlanPeriodSection({
           <PublicPlanCard
             key={plan.id}
             plan={plan}
-            isAuthenticated={isAuthenticated}
             callbackUrl="/planos"
           />
         ))}
@@ -238,11 +228,7 @@ function PlanPeriodSection({
 }
 
 export default async function PlanosPage() {
-  const [session, sections] = await Promise.all([
-    getOptionalSession(),
-    getPublicPlanSections(),
-  ]);
-  const isAuthenticated = Boolean(session?.user?.id);
+  const sections = await getPublicPlanSections();
 
   const fullPlans = sections.flatMap((section) =>
     section.plans.filter((plan) => plan.isFull),
@@ -311,7 +297,6 @@ export default async function PlanosPage() {
 
         <RecommendedFullSection
           plans={fullPlans}
-          isAuthenticated={isAuthenticated}
         />
 
         <div className="mt-14 space-y-14">
@@ -319,7 +304,6 @@ export default async function PlanosPage() {
             <PlanPeriodSection
               key={section.key}
               section={section}
-              isAuthenticated={isAuthenticated}
             />
           ))}
         </div>
@@ -342,8 +326,8 @@ export default async function PlanosPage() {
             <Button
               asChild
               size="lg"
-              variant="secondary"
-              className="w-full border-black/15 text-black hover:bg-black/5 sm:w-auto"
+              variant="outline-dark"
+              className="w-full sm:w-auto"
             >
               <a
                 href={BRAND.contact.whatsappUrl}

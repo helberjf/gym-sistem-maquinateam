@@ -1,3 +1,4 @@
+import type { Session } from "next-auth";
 import { ProductStatus } from "@prisma/client";
 import { getOptionalSession } from "@/lib/auth/session";
 import { NotFoundError, UnauthorizedError } from "@/lib/errors";
@@ -74,8 +75,13 @@ export async function getStoreFavoriteProductIds() {
   return wishlist?.items.map((item) => item.productId) ?? [];
 }
 
-export async function getStoreWishlistSummary() {
-  const session = await getOptionalSession();
+export async function getStoreWishlistSummary(options?: {
+  session?: Session | null;
+}) {
+  const session =
+    options?.session === undefined
+      ? await getOptionalSession()
+      : options.session;
 
   if (!session?.user?.id) {
     return {

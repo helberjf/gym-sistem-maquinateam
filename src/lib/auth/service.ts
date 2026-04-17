@@ -49,9 +49,12 @@ type ServiceAuditContext = {
   actorId?: string | null;
 };
 
+type EmailDispatcher = (send: () => Promise<void>) => void;
+
 export async function registerStudent(
   input: RegisterInput,
   auditContext?: ServiceAuditContext,
+  options?: { onEmailReady?: EmailDispatcher },
 ) {
   const email = normalizeEmail(input.email);
 
@@ -112,17 +115,29 @@ export async function registerStudent(
     return createdUser;
   });
 
-  let emailSent = true;
-
-  try {
-    await sendVerificationEmail({
+  const sendEmail = () =>
+    sendVerificationEmail({
       email,
       name: user.name,
       verificationUrl: buildVerificationUrl(rawToken),
     });
-  } catch (error) {
-    emailSent = false;
-    console.error("verification email error:", error);
+
+  let emailSent = true;
+
+  if (options?.onEmailReady) {
+    options.onEmailReady(() =>
+      sendEmail().catch((error) => {
+        console.error("verification email error (deferred):", error);
+        throw error;
+      }),
+    );
+  } else {
+    try {
+      await sendEmail();
+    } catch (error) {
+      emailSent = false;
+      console.error("verification email error:", error);
+    }
   }
 
   await logAuditEvent({
@@ -318,6 +333,7 @@ export async function resendVerificationEmail(
 export async function requestPasswordReset(
   input: ForgotPasswordInput,
   auditContext?: ServiceAuditContext,
+  options?: { onEmailReady?: EmailDispatcher },
 ): Promise<VerificationRequestResult> {
   const email = normalizeEmail(input.email);
 
@@ -358,17 +374,24 @@ export async function requestPasswordReset(
     }),
   ]);
 
-  let emailSent = true;
-
-  try {
-    await sendPasswordResetEmail({
+  const sendEmail = () =>
+    sendPasswordResetEmail({
       email: user.email,
       name: user.name,
       resetUrl: buildPasswordResetUrl(rawToken),
     });
-  } catch (error) {
-    emailSent = false;
-    console.error("password reset email error:", error);
+
+  let emailSent = true;
+
+  if (options?.onEmailReady) {
+    options.onEmailReady(sendEmail);
+  } else {
+    try {
+      await sendEmail();
+    } catch (error) {
+      emailSent = false;
+      console.error("password reset email error:", error);
+    }
   }
 
   await logAuditEvent({

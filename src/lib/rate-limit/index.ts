@@ -388,3 +388,17 @@ export const resetPasswordLimiter = createRateLimitProfile({
   windowMs: 30 * 60 * 1_000,
   message: "Muitas tentativas de redefinir senha. Aguarde antes de tentar novamente.",
 });
+
+export const publicReadLimiter = createRateLimitProfile({
+  key: "public-read",
+  limit: 120,
+  windowMs: 60 * 1_000,
+  message: "Muitas requisicoes em pouco tempo. Aguarde antes de tentar novamente.",
+});
+
+export const pixStatusLimiter = createRateLimitProfile({
+  key: "pix-status",
+  limit: 60,
+  windowMs: 60 * 1_000,
+  message: "Muitas consultas de status em pouco tempo. Aguarde antes de tentar novamente.",
+});

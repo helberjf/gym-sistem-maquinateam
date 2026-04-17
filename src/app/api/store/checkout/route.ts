@@ -1,11 +1,14 @@
+import { after } from "next/server";
 import { getOptionalSession } from "@/lib/auth/session";
-import { createStoreCheckoutSession } from "@/lib/store/orders";
+import { getAppUrl } from "@/lib/app-url";
 import { handleRouteError, successResponse } from "@/lib/errors";
+import { sendOrderConfirmationEmail } from "@/lib/mail";
 import {
   attachRateLimitHeaders,
   enforceRateLimit,
   mutationLimiter,
 } from "@/lib/rate-limit";
+import { createStoreCheckoutSession } from "@/lib/store/orders";
 import { checkoutSchema, parseJsonBody } from "@/lib/validators";
 
 export const runtime = "nodejs";
@@ -32,6 +35,25 @@ export async function POST(request: Request) {
       userId: session?.user?.id ?? null,
       request,
     });
+
+    if (checkout.customerEmail) {
+      const trackOrderUrl = `${getAppUrl()}/minha-conta/pedidos/${checkout.orderId}`;
+      after(() =>
+        sendOrderConfirmationEmail({
+          email: checkout.customerEmail as string,
+          name: checkout.customerName,
+          orderNumber: checkout.orderNumber,
+          totalCents: checkout.totalCents,
+          subtotalCents: checkout.subtotalCents,
+          discountCents: checkout.discountCents,
+          shippingCents: checkout.shippingCents,
+          deliveryLabel: checkout.deliveryLabel,
+          paymentMethod: checkout.paymentMethod,
+          items: checkout.emailItems,
+          trackOrderUrl,
+        }).catch(console.error),
+      );
+    }
 
     return attachRateLimitHeaders(
       successResponse(

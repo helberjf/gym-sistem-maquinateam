@@ -749,7 +749,8 @@ export async function getAdminDashboardData(viewer: ViewerContext) {
   const attendanceMap = new Map(attendanceDays.map((point) => [point.note as string, point]));
 
   const [
-    students,
+    totalStudents,
+    activeStudents,
     delinquentPayments,
     attendanceToday,
     pendingPayments,
@@ -763,11 +764,19 @@ export async function getAdminDashboardData(viewer: ViewerContext) {
     paymentsForChart,
     attendancesForChart,
   ] = await Promise.all([
-    prisma.studentProfile.findMany({
+    prisma.studentProfile.count({
       where: getStudentVisibilityWhere(viewer),
-      select: {
-        id: true,
-        status: true,
+    }),
+    prisma.studentProfile.count({
+      where: {
+        AND: [
+          getStudentVisibilityWhere(viewer),
+          {
+            status: {
+              in: [StudentStatus.ACTIVE, StudentStatus.TRIAL],
+            },
+          },
+        ],
       },
     }),
     prisma.payment.findMany({
@@ -1013,12 +1022,8 @@ export async function getAdminDashboardData(viewer: ViewerContext) {
 
   return {
     metrics: {
-      totalStudents: students.length,
-      activeStudents: students.filter(
-        (student) =>
-          student.status === StudentStatus.ACTIVE ||
-          student.status === StudentStatus.TRIAL,
-      ).length,
+      totalStudents,
+      activeStudents,
       delinquentStudents: delinquentPayments.length,
       attendanceToday,
       monthRevenueCents: paidPaymentsThisMonth._sum.amountCents ?? 0,

@@ -1,15 +1,12 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import { getCartSnapshot } from "@/lib/store/cart";
 
 type StoreCartLinkProps = {
+  count: number;
   mobile?: boolean;
 };
 
-export async function StoreCartLink({ mobile = false }: StoreCartLinkProps) {
-  const cart = await getCartSnapshot();
-  const count = cart.summary.itemCount;
-
+export function StoreCartLink({ count, mobile = false }: StoreCartLinkProps) {
   if (mobile) {
     return (
       <Link

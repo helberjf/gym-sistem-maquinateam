@@ -1,5 +1,4 @@
 import { HomeLandingPage } from "@/components/public/HomeLandingPage";
-import { getOptionalSession } from "@/lib/auth/session";
 import { getFeaturedPublicPlans } from "@/lib/billing/public";
 import { BRAND } from "@/lib/constants/brand";
 import { buildPublicMetadata, serializeJsonLd, absoluteUrl } from "@/lib/seo";
@@ -21,8 +20,7 @@ export const metadata = buildPublicMetadata({
 export const revalidate = 120;
 
 export default async function PublicHomePage() {
-  const [session, featuredPlans, featuredProducts] = await Promise.all([
-    getOptionalSession(),
+  const [featuredPlans, featuredProducts] = await Promise.all([
     getFeaturedPublicPlans(3).catch(() => []),
     getFeaturedProducts(12).catch(() => []),
   ]);
@@ -96,7 +94,6 @@ export default async function PublicHomePage() {
       <HomeLandingPage
         featuredPlans={featuredPlans}
         featuredProducts={featuredProducts}
-        isAuthenticated={Boolean(session?.user?.id)}
       />
     </>
   );

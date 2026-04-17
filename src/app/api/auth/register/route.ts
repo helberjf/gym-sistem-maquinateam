@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { registerStudent } from "@/lib/auth/service";
 import { ConflictError, handleRouteError, successResponse } from "@/lib/errors";
 import {
@@ -21,7 +22,17 @@ export async function POST(request: Request) {
       keyParts: [input.email],
     });
     rateLimitHeaders = rateLimit.headers;
-    const result = await registerStudent(input, { request });
+
+    let deferredEmail: (() => Promise<void>) | null = null;
+    const result = await registerStudent(
+      input,
+      { request },
+      { onEmailReady: (send) => { deferredEmail = send; } },
+    );
+
+    if (deferredEmail) {
+      after(() => (deferredEmail as () => Promise<void>)().catch(console.error));
+    }
 
     if (!result.ok) {
       throw new ConflictError(result.message);

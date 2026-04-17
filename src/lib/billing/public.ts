@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 export type PublicPlanPeriodKey =
@@ -209,7 +210,7 @@ function mapPlanToPublicCard(plan: {
   } satisfies PublicPlanCatalogItem;
 }
 
-export async function getPublicPlansCatalog() {
+export const getPublicPlansCatalog = cache(async function getPublicPlansCatalog() {
   const plans = await prisma.plan.findMany({
     where: {
       active: true,
@@ -235,7 +236,7 @@ export async function getPublicPlansCatalog() {
   });
 
   return plans.map(mapPlanToPublicCard);
-}
+});
 
 export async function getPublicPlanSections() {
   const plans = await getPublicPlansCatalog();

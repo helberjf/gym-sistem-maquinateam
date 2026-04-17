@@ -1507,7 +1507,7 @@ export async function getStudentTrainingSnapshot(viewer: ViewerContext) {
     enrollments,
     monthPresentCount,
     monthNoShowCount,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.studentProfile.findFirst({
       where: {
         AND: [

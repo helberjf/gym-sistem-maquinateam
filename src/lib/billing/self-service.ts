@@ -124,8 +124,13 @@ async function getSelfServiceUser(userId: string) {
     );
   }
 
-  if (user.studentProfile.status === StudentStatus.INACTIVE) {
-    throw new ConflictError("Sua conta de aluno esta inativa no momento.");
+  if (
+    user.studentProfile.status !== StudentStatus.ACTIVE &&
+    user.studentProfile.status !== StudentStatus.TRIAL
+  ) {
+    throw new ConflictError(
+      "Sua conta de aluno nao esta ativa. Aguarde a aprovacao ou entre em contato com a equipe.",
+    );
   }
 
   return user;
