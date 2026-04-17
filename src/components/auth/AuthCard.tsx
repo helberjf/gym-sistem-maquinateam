@@ -26,7 +26,8 @@ export function AuthCard({ title, description, children, size = "md" }: AuthCard
         </p>
       </div>
 
-      <div className="rounded-3xl border border-brand-gray-mid bg-brand-gray-dark/95 p-6 shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur sm:rounded-[2rem] sm:p-8">
+      <div className="relative overflow-hidden rounded-3xl border border-brand-gray-mid/80 bg-brand-gray-dark/95 p-6 shadow-[0_0_0_1px_rgba(200,16,46,0.12),0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur sm:rounded-[2rem] sm:p-8">
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-red/70 to-transparent" />
         {children}
       </div>
     </div>

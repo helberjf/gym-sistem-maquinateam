@@ -91,25 +91,27 @@ export default function ContatoPage() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark p-6"
+                  className="group flex min-w-0 overflow-hidden flex-col rounded-3xl border border-brand-gray-mid bg-brand-gray-dark p-6 transition hover:border-brand-red/50 hover:bg-brand-gray-dark/80"
                 >
                   <p className="text-xs uppercase tracking-[0.3em] text-brand-gray-light">
                     {item.label}
                   </p>
-                  <p className="mt-4 text-xl font-bold uppercase text-white">
+                  <p className="mt-4 break-words text-base font-semibold text-white sm:text-lg">
                     {item.value}
                   </p>
-                  <p className="mt-4 text-sm text-brand-gray-light">{item.action}</p>
+                  <p className="mt-auto pt-4 text-sm text-brand-red group-hover:underline">
+                    {item.action} &rarr;
+                  </p>
                 </a>
               ))}
             </div>
           </div>
 
-          <section className="rounded-[2.5rem] border border-brand-gray-mid bg-white p-8 text-black shadow-[0_20px_80px_rgba(255,255,255,0.06)]">
+          <section className="overflow-hidden rounded-[2.5rem] border border-brand-gray-mid bg-white p-8 text-black shadow-[0_20px_80px_rgba(255,255,255,0.06)]">
             <p className="text-xs uppercase tracking-[0.3em] text-black/55">
               Atendimento
             </p>
-            <h2 className="mt-4 text-5xl font-bold uppercase leading-none">
+            <h2 className="mt-4 text-3xl font-bold uppercase leading-tight sm:text-4xl lg:text-5xl lg:leading-none">
               Venha conhecer a academia
             </h2>
             <div className="mt-8 space-y-5 text-sm leading-7 text-black/70">
@@ -134,7 +136,7 @@ export default function ContatoPage() {
                   Falar no WhatsApp
                 </a>
               </Button>
-              <Button asChild size="lg" variant="secondary">
+              <Button asChild size="lg" variant="outline-dark">
                 <Link href="/cadastro">Criar conta</Link>
               </Button>
             </div>

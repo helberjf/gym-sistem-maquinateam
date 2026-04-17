@@ -533,7 +533,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={loading || !formValid}
-          className="w-full rounded-xl bg-brand-red px-4 py-3 text-sm font-semibold text-black transition hover:bg-brand-red-dark disabled:opacity-50"
+          className="w-full rounded-xl bg-brand-red px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(200,16,46,0.35)] transition hover:bg-brand-red-dark disabled:opacity-50"
         >
           {loading ? (
             <span className="inline-flex items-center justify-center gap-2">

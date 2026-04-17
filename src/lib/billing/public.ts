@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export type PublicPlanPeriodKey =
   | "monthly"
@@ -238,7 +239,7 @@ export const getPublicPlansCatalog = cache(async function getPublicPlansCatalog(
 
     return plans.map(mapPlanToPublicCard);
   } catch (error) {
-    console.error("Falha ao carregar catalogo de planos.", error);
+    logger.error("billing.plans.catalog.failed", error);
     return [];
   }
 });

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Clock3, Flame, Sparkles } from "lucide-react";
+import { BadgeCheck, Clock3, Flame, Sparkles, AlertCircle } from "lucide-react";
 import { PlanCheckoutButton } from "@/components/public/PlanCheckoutButton";
 import { PublicPlanCard } from "@/components/public/PublicPlanCard";
 import { SectionHeading } from "@/components/public/SectionHeading";
@@ -299,14 +299,34 @@ export default async function PlanosPage() {
           plans={fullPlans}
         />
 
-        <div className="mt-14 space-y-14">
-          {displaySections.map((section) => (
-            <PlanPeriodSection
-              key={section.key}
-              section={section}
-            />
-          ))}
-        </div>
+        {displaySections.length === 0 ? (
+          <div className="mt-14 flex flex-col items-center gap-4 rounded-[2rem] border border-brand-gray-mid bg-brand-gray-dark/60 px-6 py-16 text-center">
+            <AlertCircle className="h-10 w-10 text-brand-gray-light" />
+            <p className="text-xl font-bold uppercase text-white">
+              Planos momentaneamente indisponiveis
+            </p>
+            <p className="max-w-md text-sm leading-7 text-brand-gray-light">
+              Estamos atualizando nossa grade de planos. Entre em contato via WhatsApp para saber as opcoes e valores atuais.
+            </p>
+            <a
+              href={BRAND.contact.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-2 rounded-xl bg-brand-red px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_24px_rgba(200,16,46,0.35)] transition hover:bg-brand-red-dark"
+            >
+              Falar no WhatsApp
+            </a>
+          </div>
+        ) : (
+          <div className="mt-14 space-y-14">
+            {displaySections.map((section) => (
+              <PlanPeriodSection
+                key={section.key}
+                section={section}
+              />
+            ))}
+          </div>
+        )}
 
         <section className="mt-14 rounded-[2.5rem] border border-brand-gray-mid bg-white px-6 py-10 text-black sm:px-10">
           <p className="text-xs uppercase tracking-[0.3em] text-black/55">
