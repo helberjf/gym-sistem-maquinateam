@@ -60,6 +60,9 @@ export function Footer() {
               <Link href="/termos-de-uso" className="block hover:text-white">
                 Termos de Uso
               </Link>
+              <Link href="/status" className="block hover:text-white">
+                Status do sistema
+              </Link>
             </div>
           </div>
 

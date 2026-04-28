@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Manrope } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { BRAND } from "@/lib/constants/brand";
 import { getSiteUrl } from "@/lib/seo";
 import { AppToaster } from "@/components/ui/AppToaster";
+import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 
 const manrope = Manrope({
@@ -98,7 +100,9 @@ export default function RootLayout({
       <body>
         {children}
         <AppToaster />
+        <CookieConsentBanner />
         <ServiceWorkerRegistration />
+        <Analytics />
       </body>
     </html>
   );
