@@ -164,8 +164,7 @@ export function StoreProductCard({
               productId={product.id}
               size="sm"
               className="w-full rounded-[1rem] text-sm font-semibold"
-              label={soldOut ? "Indisponivel" : "Comprar agora"}
-              redirectToCart
+              label={soldOut ? "Indisponivel" : "Adicionar ao carrinho"}
               disabled={soldOut}
             />
           ) : (

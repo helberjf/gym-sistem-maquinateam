@@ -10,6 +10,7 @@ import {
 import { logAuditEvent } from "@/lib/audit";
 import { hashPassword } from "@/lib/auth/password";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
+import { ensureActivePublicPlanForCheckout } from "@/lib/billing/public-plan-resolver";
 import {
   ConflictError,
   NotFoundError,
@@ -139,12 +140,7 @@ async function getSelfServiceUser(userId: string) {
 }
 
 async function getPurchasablePlan(planId: string) {
-  const plan = await prisma.plan.findFirst({
-    where: {
-      id: planId,
-      active: true,
-    },
-  });
+  const plan = await ensureActivePublicPlanForCheckout(planId);
 
   if (!plan) {
     throw new NotFoundError("Plano nao encontrado ou indisponivel.");

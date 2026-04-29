@@ -1,9 +1,11 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_PUBLIC_PLAN_CATALOG } from "@/lib/billing/public-plan-catalog";
 import {
-  DEFAULT_PUBLIC_PLAN_CATALOG,
-  type PublicPlanCatalogSeed,
-} from "@/lib/billing/public-plan-catalog";
+  buildPublicPlanCreateData,
+  buildPublicPlanUpdateData,
+  getFallbackPublicPlanId,
+} from "@/lib/billing/public-plan-resolver";
 
 export type PublicPlanPeriodKey =
   | "monthly"
@@ -221,44 +223,11 @@ function getFallbackPublicPlansCatalog() {
     mapPlanToPublicCard(
       {
         ...plan,
-        id: `fallback-plan-${plan.slug}`,
+        id: getFallbackPublicPlanId(plan.slug),
       },
       "fallback",
     ),
   );
-}
-
-function buildPublicPlanCreateData(plan: PublicPlanCatalogSeed) {
-  return {
-    name: plan.name,
-    slug: plan.slug,
-    description: plan.description,
-    benefits: [...plan.benefits],
-    modalityId: null,
-    priceCents: plan.priceCents,
-    billingIntervalMonths: plan.billingIntervalMonths,
-    durationMonths: plan.durationMonths,
-    sessionsPerWeek: plan.sessionsPerWeek,
-    isUnlimited: plan.isUnlimited,
-    enrollmentFeeCents: plan.enrollmentFeeCents,
-    active: true,
-  };
-}
-
-function buildPublicPlanUpdateData(plan: PublicPlanCatalogSeed) {
-  return {
-    name: plan.name,
-    description: plan.description,
-    benefits: [...plan.benefits],
-    modalityId: null,
-    priceCents: plan.priceCents,
-    billingIntervalMonths: plan.billingIntervalMonths,
-    durationMonths: plan.durationMonths,
-    sessionsPerWeek: plan.sessionsPerWeek,
-    isUnlimited: plan.isUnlimited,
-    enrollmentFeeCents: plan.enrollmentFeeCents,
-    active: true,
-  };
 }
 
 async function fetchActivePublicPlans() {

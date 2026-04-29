@@ -224,45 +224,40 @@ export function LoginForm({ googleEnabled }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="relative py-1">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-white/10" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="rounded-full border border-white/10 bg-brand-black px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gray-light">
-            ou continue com
-          </span>
-        </div>
-      </div>
+      {googleEnabled ? (
+        <>
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="rounded-full border border-white/10 bg-brand-black px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gray-light">
+                ou continue com
+              </span>
+            </div>
+          </div>
 
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={!googleEnabled || loading || googleLoading}
-          className={authSecondaryButtonClassName}
-        >
-          {googleLoading ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          ) : (
-            <GoogleLogo />
-          )}
-          {googleLoading ? "Conectando..." : "Continuar com Google"}
-        </button>
-
-        {!googleEnabled ? (
-          <p className={authHintTextClassName}>
-            O botao foi mantido no layout e fica ativo assim que a integracao do
-            Google estiver configurada no ambiente.
-          </p>
-        ) : null}
-      </div>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading || googleLoading}
+            className={authSecondaryButtonClassName}
+          >
+            {googleLoading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              <GoogleLogo />
+            )}
+            {googleLoading ? "Conectando..." : "Continuar com Google"}
+          </button>
+        </>
+      ) : null}
 
       <nav
-        className="rounded-[1.1rem] border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-brand-gray-light"
+        className="flex items-center justify-center gap-1.5 rounded-[1.1rem] border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-brand-gray-light"
         aria-label="Links auxiliares de autenticacao"
       >
-        Nao tem conta?{" "}
+        <span>Nao tem conta?</span>
         <Link href="/cadastro" className={authFooterLinkClassName}>
           Criar conta
         </Link>

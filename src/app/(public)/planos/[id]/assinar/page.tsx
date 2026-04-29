@@ -5,20 +5,23 @@ import { Button } from "@/components/ui/Button";
 import { GuestPlanCheckoutForm } from "@/components/public/GuestPlanCheckoutForm";
 import { SectionHeading } from "@/components/public/SectionHeading";
 import { formatCurrencyFromCents } from "@/lib/billing/constants";
-import { prisma } from "@/lib/prisma";
+import {
+  ensureActivePublicPlanForCheckout,
+  findActivePublicPlanByIdentifier,
+  getDefaultPublicPlanSeedFromIdentifier,
+} from "@/lib/billing/public-plan-resolver";
 import { buildPublicMetadata } from "@/lib/seo";
 
 type PageParams = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: PageParams }) {
   const { id } = await params;
-  const plan = await prisma.plan.findFirst({
-    where: { id, active: true },
-    select: { name: true },
-  });
+  const defaultPlan = getDefaultPublicPlanSeedFromIdentifier(id);
+  const plan = await findActivePublicPlanByIdentifier(id).catch(() => null);
+  const planName = plan?.name ?? defaultPlan?.name;
 
   return buildPublicMetadata({
-    title: plan ? `Assinar ${plan.name}` : "Assinar plano",
+    title: planName ? `Assinar ${planName}` : "Assinar plano",
     description:
       "Cadastro rapido e checkout do plano em uma so etapa. Pague no Pix ou cartao.",
     path: `/planos/${id}/assinar`,
@@ -39,21 +42,7 @@ export default async function GuestPlanCheckoutPage({
     redirect("/planos");
   }
 
-  const plan = await prisma.plan.findFirst({
-    where: { id, active: true },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      benefits: true,
-      priceCents: true,
-      enrollmentFeeCents: true,
-      billingIntervalMonths: true,
-      durationMonths: true,
-      sessionsPerWeek: true,
-      isUnlimited: true,
-    },
-  });
+  const plan = await ensureActivePublicPlanForCheckout(id);
 
   if (!plan) {
     notFound();
@@ -65,6 +54,8 @@ export default async function GuestPlanCheckoutPage({
     plan.durationMonths ?? plan.billingIntervalMonths,
   );
   const monthlyEquivalent = Math.round(plan.priceCents / referenceMonths);
+  const isMonthlyCharge =
+    plan.billingIntervalMonths === 1 && referenceMonths === 1;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
@@ -96,13 +87,15 @@ export default async function GuestPlanCheckoutPage({
 
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-brand-gray-light">
-              Valor do periodo
+              {isMonthlyCharge ? "Cobranca mensal" : "Valor do periodo"}
             </p>
             <p className="mt-2 text-3xl font-bold text-white sm:text-4xl">
               {formatCurrencyFromCents(totalCents)}
             </p>
             <p className="mt-1 text-xs text-brand-gray-light">
-              equivalente a {formatCurrencyFromCents(monthlyEquivalent)} por mes
+              {isMonthlyCharge
+                ? "ciclo mensal pelo site"
+                : `equivalente a ${formatCurrencyFromCents(monthlyEquivalent)} por mes`}
             </p>
             {plan.enrollmentFeeCents > 0 ? (
               <p className="mt-1 text-xs text-brand-gray-light">

@@ -524,6 +524,75 @@ function getFallbackCategories() {
   );
 }
 
+function buildFallbackProductImageCreateData(product: StoreProductDetailRecord) {
+  return product.images.map((image, index) => ({
+    url: image.url,
+    altText: image.altText ?? product.name,
+    isPrimary: image.isPrimary ?? index === 0,
+    sortOrder: index,
+  }));
+}
+
+function buildFallbackProductCreateData(product: StoreProductDetailRecord) {
+  return {
+    name: product.name,
+    slug: product.slug,
+    sku: product.sku,
+    category: product.category,
+    shortDescription: product.shortDescription,
+    description: product.description,
+    status: product.status,
+    priceCents: product.priceCents,
+    stockQuantity: product.stockQuantity,
+    lowStockThreshold: product.lowStockThreshold,
+    trackInventory: product.trackInventory,
+    storeVisible: true,
+    featured: product.featured,
+    weightGrams: product.weightGrams,
+    heightCm: product.heightCm,
+    widthCm: product.widthCm,
+    lengthCm: product.lengthCm,
+    images: {
+      create: buildFallbackProductImageCreateData(product),
+    },
+  };
+}
+
+function buildFallbackProductUpdateData(product: StoreProductDetailRecord) {
+  return {
+    name: product.name,
+    sku: product.sku,
+    category: product.category,
+    shortDescription: product.shortDescription,
+    description: product.description,
+    status: product.status,
+    priceCents: product.priceCents,
+    stockQuantity: product.stockQuantity,
+    lowStockThreshold: product.lowStockThreshold,
+    trackInventory: product.trackInventory,
+    storeVisible: true,
+    featured: product.featured,
+    weightGrams: product.weightGrams,
+    heightCm: product.heightCm,
+    widthCm: product.widthCm,
+    lengthCm: product.lengthCm,
+  };
+}
+
+async function syncFallbackStoreProductsToDatabase() {
+  await prisma.$transaction(
+    FALLBACK_STORE_PRODUCTS.map((product) =>
+      prisma.product.upsert({
+        where: {
+          slug: product.slug,
+        },
+        update: buildFallbackProductUpdateData(product),
+        create: buildFallbackProductCreateData(product),
+      }),
+    ),
+  );
+}
+
 export const publicProductCardSelect = {
   id: true,
   name: true,
@@ -627,33 +696,46 @@ const getStoreCatalogCategories = cache(async function getStoreCatalogCategories
   return categories.map((entry) => entry.category);
 });
 
+async function fetchFeaturedStoreProducts(limit: number) {
+  const products = await prisma.product.findMany({
+    where: {
+      storeVisible: true,
+      status: ProductStatus.ACTIVE,
+      OR: [
+        {
+          featured: true,
+        },
+        {
+          stockQuantity: {
+            gt: 0,
+          },
+        },
+        {
+          trackInventory: false,
+        },
+      ],
+    },
+    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+    take: limit,
+    select: publicProductCardSelect,
+  });
+
+  return products as StoreCatalogProductCard[];
+}
+
 export const getFeaturedStoreProducts = cache(async function getFeaturedStoreProducts(limit = 4) {
   try {
-    const products = await prisma.product.findMany({
-      where: {
-        storeVisible: true,
-        status: ProductStatus.ACTIVE,
-        OR: [
-          {
-            featured: true,
-          },
-          {
-            stockQuantity: {
-              gt: 0,
-            },
-          },
-          {
-            trackInventory: false,
-          },
-        ],
-      },
-      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-      take: limit,
-      select: publicProductCardSelect,
-    });
+    let products = await fetchFeaturedStoreProducts(limit);
 
     if (products.length > 0) {
-      return products as StoreCatalogProductCard[];
+      return products;
+    }
+
+    await syncFallbackStoreProductsToDatabase();
+    products = await fetchFeaturedStoreProducts(limit);
+
+    if (products.length > 0) {
+      return products;
     }
   } catch (error) {
     console.error("Falha ao carregar produtos em destaque da loja.", error);
@@ -669,15 +751,38 @@ export async function getStoreCatalogData(filters: CatalogFilters) {
       orderBy: getCatalogOrderBy(filters.sort as CatalogSortValue),
       select: publicProductCardSelect,
     });
-    const categories = await getStoreCatalogCategories();
 
     const filteredProducts = (products as StoreCatalogProductCard[]).filter((product) =>
       matchesAvailability(product, filters.availability),
     );
 
     if (filteredProducts.length === 0 && isCatalogFilterDefault(filters)) {
+      await syncFallbackStoreProductsToDatabase();
+      const syncedProducts = await prisma.product.findMany({
+        where: getPublicProductWhere(filters),
+        orderBy: getCatalogOrderBy(filters.sort as CatalogSortValue),
+        select: publicProductCardSelect,
+      });
+      const syncedFilteredProducts = (syncedProducts as StoreCatalogProductCard[]).filter((product) =>
+        matchesAvailability(product, filters.availability),
+      );
+
+      if (syncedFilteredProducts.length > 0) {
+        return {
+          products: syncedFilteredProducts,
+          categories: syncedFilteredProducts
+            .map((product) => product.category)
+            .filter((category, index, categories) => categories.indexOf(category) === index)
+            .sort((a, b) => a.localeCompare(b)),
+          summary: buildCatalogSummary(syncedFilteredProducts),
+          source: "live" as const,
+        };
+      }
+
       return buildFallbackCatalogData(filters);
     }
+
+    const categories = await getStoreCatalogCategories();
 
     return {
       products: filteredProducts,
@@ -767,6 +872,67 @@ export async function getStoreCatalogPageData(
       ]);
 
     if (totalItems === 0 && isCatalogFilterDefault(filters)) {
+      await syncFallbackStoreProductsToDatabase();
+
+      const [syncedTotalItems, syncedFeaturedProducts, syncedInStockProducts, syncedProducts] =
+        await prisma.$transaction([
+          prisma.product.count({
+            where: liveWhere,
+          }),
+          prisma.product.count({
+            where: {
+              AND: [liveWhere, { featured: true }],
+            },
+          }),
+          prisma.product.count({
+            where: {
+              AND: [
+                liveWhere,
+                {
+                  OR: [
+                    {
+                      trackInventory: false,
+                    },
+                    {
+                      stockQuantity: {
+                        gt: 0,
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+          prisma.product.findMany({
+            where: liveWhere,
+            orderBy: getCatalogOrderBy(filters.sort as CatalogSortValue),
+            skip: Math.max(0, (page - 1) * limit),
+            take: limit,
+            select: publicProductCardSelect,
+          }),
+        ]);
+
+      if (syncedTotalItems > 0) {
+        const categories = await getStoreCatalogCategories();
+        const pagination = buildCatalogPagination({
+          totalItems: syncedTotalItems,
+          page,
+          limit,
+        });
+
+        return {
+          products: syncedProducts as StoreCatalogProductCard[],
+          categories,
+          summary: {
+            totalProducts: syncedTotalItems,
+            featuredProducts: syncedFeaturedProducts,
+            inStockProducts: syncedInStockProducts,
+          },
+          source: "live" as const,
+          pagination,
+        };
+      }
+
       return buildFallbackCatalogPageData(filters, {
         page,
         limit,
@@ -800,66 +966,76 @@ export async function getStoreCatalogPageData(
   }
 }
 
+async function fetchStoreProductDetailFromDatabase(slug: string) {
+  const product = await prisma.product.findFirst({
+    where: {
+      slug,
+      storeVisible: true,
+      status: {
+        not: ProductStatus.ARCHIVED,
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      sku: true,
+      category: true,
+      shortDescription: true,
+      description: true,
+      priceCents: true,
+      status: true,
+      stockQuantity: true,
+      lowStockThreshold: true,
+      trackInventory: true,
+      featured: true,
+      weightGrams: true,
+      heightCm: true,
+      widthCm: true,
+      lengthCm: true,
+      images: {
+        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+        select: {
+          id: true,
+          url: true,
+          altText: true,
+          isPrimary: true,
+        },
+      },
+    },
+  });
+
+  if (!product) {
+    return null;
+  }
+
+  const relatedProducts = await prisma.product.findMany({
+    where: {
+      id: {
+        not: product.id,
+      },
+      storeVisible: true,
+      status: ProductStatus.ACTIVE,
+      category: product.category,
+    },
+    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+    take: 4,
+    select: publicProductCardSelect,
+  });
+
+  return {
+    product: product as StoreProductDetailRecord,
+    relatedProducts: relatedProducts as StoreCatalogProductCard[],
+    source: "live" as const,
+  };
+}
+
 export const getStoreProductDetail = cache(async function getStoreProductDetail(slug: string) {
   try {
-    const product = await prisma.product.findFirst({
-      where: {
-        slug,
-        storeVisible: true,
-        status: {
-          not: ProductStatus.ARCHIVED,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        sku: true,
-        category: true,
-        shortDescription: true,
-        description: true,
-        priceCents: true,
-        status: true,
-        stockQuantity: true,
-        lowStockThreshold: true,
-        trackInventory: true,
-        featured: true,
-        weightGrams: true,
-        heightCm: true,
-        widthCm: true,
-        lengthCm: true,
-        images: {
-          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
-          select: {
-            id: true,
-            url: true,
-            altText: true,
-            isPrimary: true,
-          },
-        },
-      },
-    });
+    const data = await fetchStoreProductDetailFromDatabase(slug);
 
-    if (product) {
-      const relatedProducts = await prisma.product.findMany({
-        where: {
-          id: {
-            not: product.id,
-          },
-          storeVisible: true,
-          status: ProductStatus.ACTIVE,
-          category: product.category,
-        },
-        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-        take: 4,
-        select: publicProductCardSelect,
-      });
-
-      return {
-        product: product as StoreProductDetailRecord,
-        relatedProducts: relatedProducts as StoreCatalogProductCard[],
-        source: "live" as const,
-      };
+    if (data) {
+      return data;
     }
   } catch (error) {
     console.error("Falha ao carregar detalhe do produto da loja.", error);
@@ -869,6 +1045,17 @@ export const getStoreProductDetail = cache(async function getStoreProductDetail(
 
   if (!fallbackProduct) {
     throw new NotFoundError("Produto nao encontrado.");
+  }
+
+  try {
+    await syncFallbackStoreProductsToDatabase();
+    const data = await fetchStoreProductDetailFromDatabase(slug);
+
+    if (data) {
+      return data;
+    }
+  } catch (error) {
+    console.error("Falha ao sincronizar produto de demonstracao da loja.", error);
   }
 
   return {

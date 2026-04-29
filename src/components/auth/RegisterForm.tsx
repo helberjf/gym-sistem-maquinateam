@@ -68,10 +68,10 @@ function normalizePhoneForSubmit(country: PhoneCountry, value: string) {
 }
 
 const formSectionClassName =
-  "space-y-4 rounded-[1.45rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5";
+  "space-y-4 border-t border-white/10 pt-5 first:border-t-0 first:pt-0";
 
 const formSectionTitleClassName =
-  "text-xs font-semibold uppercase tracking-[0.22em] text-brand-white";
+  "text-xs font-semibold uppercase tracking-[0.2em] text-brand-white";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -299,7 +299,7 @@ export function RegisterForm() {
         <div>
           <p className={formSectionTitleClassName}>Conta</p>
           <p className={`${authHintTextClassName} mt-2`}>
-            Comece com seus dados principais para liberar o acesso.
+            Dados principais para liberar seu acesso.
           </p>
         </div>
 
@@ -308,9 +308,9 @@ export function RegisterForm() {
             <label htmlFor="name" className={authLabelClassName}>
               Nome completo
             </label>
-            {form.name ? (
+            {form.name && !nameValid ? (
               <span className="text-[11px] text-brand-gray-light">
-                {nameValid ? "Nome completo ok" : "Adicione nome e sobrenome"}
+                Use nome e sobrenome
               </span>
             ) : null}
           </div>
@@ -407,7 +407,7 @@ export function RegisterForm() {
         <div>
           <p className={formSectionTitleClassName}>Perfil</p>
           <p className={`${authHintTextClassName} mt-2`}>
-            Campos opcionais para deixar o cadastro mais completo desde o inicio.
+            Campos opcionais para completar seu cadastro.
           </p>
         </div>
 
@@ -451,7 +451,7 @@ export function RegisterForm() {
         <div>
           <p className={formSectionTitleClassName}>Contato e endereco</p>
           <p className={`${authHintTextClassName} mt-2`}>
-            O telefone e o CEP ajudam a equipe a acelerar atendimento e cobranca.
+            Use telefone e CEP para agilizar atendimento e cobranca.
           </p>
         </div>
 
@@ -624,7 +624,7 @@ export function RegisterForm() {
 
       {error ? <div className={authErrorMessageClassName}>{error}</div> : null}
 
-      <div className="space-y-3 rounded-[1.45rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+      <div className="space-y-3 border-t border-white/10 pt-5">
         <button
           type="submit"
           disabled={loading || !formValid}
@@ -633,8 +633,10 @@ export function RegisterForm() {
           {loading ? "Criando conta..." : "Criar conta"}
         </button>
 
-        <p className={`${authHintTextClassName} text-center`}>
-          Ja tem conta?{" "}
+        <p
+          className={`${authHintTextClassName} flex flex-wrap items-center justify-center gap-1.5 text-center`}
+        >
+          <span>Ja tem conta?</span>
           <Link href="/login" className={authFooterLinkClassName}>
             Entrar
           </Link>
