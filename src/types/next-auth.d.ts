@@ -7,6 +7,7 @@ declare module "next-auth" {
       id: string;
       role: UserRole;
       emailVerified: Date | null;
+      isActive: boolean;
     };
   }
 
@@ -22,5 +23,7 @@ declare module "next-auth/jwt" {
     role?: UserRole;
     emailVerified?: string | null;
     isActive?: boolean;
+    dbCheckedAt?: number;
+    issuedAt?: number;
   }
 }

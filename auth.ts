@@ -13,6 +13,7 @@ import {
   InvalidCredentialsError,
   RateLimitedCredentialsError,
 } from "@/lib/auth/credentials";
+import { getRevocationTimestamp } from "@/lib/auth/token-revocation";
 
 type SessionUserShape = {
   id?: string;
@@ -83,6 +84,8 @@ const providers: NextAuthConfig["providers"] = [
     },
   }),
 ];
+
+const DB_RECHECK_INTERVAL_SECS = 5 * 60;
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
@@ -172,6 +175,8 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
     async jwt({ token, user }) {
+      const nowSecs = Math.floor(Date.now() / 1000);
+
       if (user) {
         token.role = (user as SessionUserShape).role ?? UserRole.ALUNO;
         const emailVerified = (user as SessionUserShape).emailVerified;
@@ -180,31 +185,51 @@ export const authConfig: NextAuthConfig = {
             ? emailVerified.toISOString()
             : emailVerified ?? null;
         token.isActive = (user as SessionUserShape).isActive ?? true;
+        token.dbCheckedAt = nowSecs;
+        // iat is the JWT standard issued-at; next-auth sets it, but we also
+        // store it explicitly so we can compare against revocation timestamps.
+        if (!token.issuedAt) {
+          token.issuedAt = nowSecs;
+        }
         return token;
       }
 
-      if (
-        token.role !== undefined &&
-        token.emailVerified !== undefined &&
-        token.isActive !== undefined
-      ) {
+      const lastChecked = (token.dbCheckedAt as number | undefined) ?? 0;
+      const staleSecs = nowSecs - lastChecked;
+      const needsRecheck =
+        staleSecs > DB_RECHECK_INTERVAL_SECS ||
+        token.role === undefined ||
+        token.isActive === undefined;
+
+      if (!needsRecheck) {
         return token;
       }
 
       if (token.sub) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: {
-            role: true,
-            emailVerified: true,
-            isActive: true,
-          },
-        });
+        try {
+          const [dbUser, revokedAt] = await Promise.all([
+            prisma.user.findUnique({
+              where: { id: token.sub },
+              select: { role: true, emailVerified: true, isActive: true },
+            }),
+            getRevocationTimestamp(token.sub),
+          ]);
 
-        if (dbUser) {
+          if (!dbUser) {
+            return { ...token, isActive: false, dbCheckedAt: nowSecs };
+          }
+
+          const tokenIssuedAt = (token.issuedAt as number | undefined) ?? 0;
+          if (revokedAt !== null && revokedAt > tokenIssuedAt) {
+            return { ...token, isActive: false, dbCheckedAt: nowSecs };
+          }
+
           token.role = dbUser.role;
           token.emailVerified = dbUser.emailVerified?.toISOString() ?? null;
           token.isActive = dbUser.isActive;
+          token.dbCheckedAt = nowSecs;
+        } catch {
+          // DB/Redis unreachable: keep existing values, retry next interval
         }
       }
 
@@ -218,6 +243,7 @@ export const authConfig: NextAuthConfig = {
           typeof token.emailVerified === "string"
             ? new Date(token.emailVerified)
             : null;
+        session.user.isActive = (token.isActive as boolean | undefined) ?? true;
       }
 
       return session;

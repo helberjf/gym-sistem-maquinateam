@@ -9,6 +9,7 @@ import {
 import { logAuditEvent } from "@/lib/audit";
 import { hashPassword } from "@/lib/auth/password";
 import { generateSecureToken, hashToken } from "@/lib/auth/tokens";
+import { revokeUserTokens } from "@/lib/auth/token-revocation";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/mail";
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
@@ -580,6 +581,10 @@ export async function resetPasswordWithToken(
       },
     }),
   ]);
+
+  // Revoke any active JWTs for this user so they cannot continue using
+  // a session issued before the password change (Redis-backed, best-effort).
+  await revokeUserTokens(record.user.id);
 
   await logAuditEvent({
     action: "AUTH_PASSWORD_RESET_COMPLETED",

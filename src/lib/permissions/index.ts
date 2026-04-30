@@ -119,7 +119,7 @@ export async function requireAuthenticatedSession(
 ) {
   const session = await auth();
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.isActive === false) {
     redirect(
       `/login?callbackUrl=${encodeURIComponent(
         sanitizeCallbackUrl(callbackUrl),
@@ -159,7 +159,7 @@ export async function requirePermission(
 export async function requireApiRole(roles: UserRole[]) {
   const session = await auth();
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.isActive === false) {
     throw new UnauthorizedError("Nao autorizado.");
   }
 
@@ -173,7 +173,7 @@ export async function requireApiRole(roles: UserRole[]) {
 export async function requireApiPermission(permission: PermissionKey) {
   const session = await auth();
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.isActive === false) {
     throw new UnauthorizedError("Nao autorizado.");
   }
 

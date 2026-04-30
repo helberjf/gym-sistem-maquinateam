@@ -42,7 +42,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     if (order.customerEmail) {
-      const trackOrderUrl = `${getAppUrl()}/minha-conta/pedidos/${order.id}`;
+      const trackOrderUrl = `${getAppUrl()}/dashboard/pedidos/${order.id}`;
 
       if (order.status === OrderStatus.SHIPPED) {
         after(() =>

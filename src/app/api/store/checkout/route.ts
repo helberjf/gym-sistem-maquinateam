@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     });
 
     if (checkout.customerEmail) {
-      const trackOrderUrl = `${getAppUrl()}/minha-conta/pedidos/${checkout.orderId}`;
+      const trackOrderUrl = `${getAppUrl()}/dashboard/pedidos/${checkout.orderId}`;
       after(() =>
         safeSendEmail("order-confirmation", sendOrderConfirmationEmail, {
           email: checkout.customerEmail as string,
