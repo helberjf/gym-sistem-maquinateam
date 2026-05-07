@@ -78,7 +78,7 @@ async function getStudentNotifications(viewer: ViewerContext) {
 
   const today = startOfDay();
   const nextWeek = endOfDay(addDays(today, 7));
-  const [payments, trainings] = await Promise.all([
+  const [payments, trainings] = await prisma.$transaction([
     prisma.payment.findMany({
       where: {
         studentProfileId: viewer.studentProfileId,
@@ -151,39 +151,36 @@ async function getStaffNotifications(viewer: ViewerContext) {
     OrderStatus.SHIPPED,
   ];
 
-  const [
-    overduePayments,
-    lowStockProducts,
-    openOrders,
-    failedWebhooks,
-  ] = await Promise.all([
-    prisma.payment.count({
-      where: {
-        status: PaymentStatus.PENDING,
-        dueDate: { lt: today },
-      },
-    }),
-    prisma.product.count({
-      where: {
-        trackInventory: true,
-        status: { not: ProductStatus.ARCHIVED },
-        stockQuantity: { lte: 3 },
-      },
-    }),
-    prisma.order.count({
-      where: {
-        status: { in: openOrderStatuses },
-      },
-    }),
+  const [overduePayments, lowStockProducts, openOrders] =
+    await prisma.$transaction([
+      prisma.payment.count({
+        where: {
+          status: PaymentStatus.PENDING,
+          dueDate: { lt: today },
+        },
+      }),
+      prisma.product.count({
+        where: {
+          trackInventory: true,
+          status: { not: ProductStatus.ARCHIVED },
+          stockQuantity: { lte: 3 },
+        },
+      }),
+      prisma.order.count({
+        where: {
+          status: { in: openOrderStatuses },
+        },
+      }),
+    ]);
+  const failedWebhooks =
     viewer.role === UserRole.ADMIN
-      ? prisma.webhookEvent.count({
+      ? await prisma.webhookEvent.count({
           where: {
             processed: true,
             error: { not: null },
           },
         })
-      : Promise.resolve(0),
-  ]);
+      : 0;
 
   const notifications: DashboardNotification[] = [];
 
@@ -234,15 +231,56 @@ async function getStaffNotifications(viewer: ViewerContext) {
   return notifications;
 }
 
-export async function getDashboardNotifications(viewer: ViewerContext) {
-  const [announcements, scopedNotifications] = await Promise.all([
-    getAnnouncementNotifications(viewer),
-    viewer.role === UserRole.ALUNO
-      ? getStudentNotifications(viewer)
-      : getStaffNotifications(viewer),
-  ]);
+async function getPersistedNotifications(
+  viewer: ViewerContext,
+): Promise<DashboardNotification[]> {
+  const items = await prisma.notification.findMany({
+    where: {
+      userId: viewer.userId,
+      archivedAt: null,
+    },
+    orderBy: [{ createdAt: "desc" }],
+    take: 8,
+    select: {
+      id: true,
+      title: true,
+      message: true,
+      href: true,
+      tone: true,
+      readAt: true,
+      createdAt: true,
+    },
+  });
 
-  return [...scopedNotifications, ...announcements]
+  return items.map((item): DashboardNotification => {
+    const tone =
+      item.tone === "DANGER"
+        ? "danger"
+        : item.tone === "WARNING"
+          ? "warning"
+          : item.tone === "SUCCESS"
+            ? "success"
+            : "info";
+    return {
+      id: `persisted:${item.id}`,
+      title: item.title,
+      message: item.message,
+      href: item.href ?? "/dashboard/notificacoes",
+      tone,
+      createdAt: item.createdAt,
+    };
+  });
+}
+
+export async function getDashboardNotifications(viewer: ViewerContext) {
+  const scopedNotifications =
+    viewer.role === UserRole.ALUNO
+      ? await getStudentNotifications(viewer)
+      : await getStaffNotifications(viewer);
+  const announcements = await getAnnouncementNotifications(viewer);
+  const persisted = await getPersistedNotifications(viewer);
+
+  return [...scopedNotifications, ...announcements, ...persisted]
     .sort(notificationSort)
     .slice(0, 8);
 }

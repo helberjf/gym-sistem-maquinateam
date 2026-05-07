@@ -42,6 +42,16 @@ export default async function DashboardLayout({
       visible: true,
     },
     {
+      href: "/dashboard/notificacoes",
+      label: "Notificacoes",
+      visible: true,
+    },
+    {
+      href: "/dashboard/leads",
+      label: "Leads",
+      visible: hasPermission(session.user.role, "viewLeads"),
+    },
+    {
       href: "/dashboard/alunos",
       label: "Alunos",
       visible: hasPermission(session.user.role, "viewStudents"),
