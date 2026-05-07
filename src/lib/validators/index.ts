@@ -6,11 +6,18 @@ import {
   ValidationAppError,
 } from "@/lib/errors";
 
+export * from "@/lib/validators/ai";
 export * from "@/lib/validators/auth";
+export * from "@/lib/validators/availability";
 export * from "@/lib/validators/billing";
 export * from "@/lib/validators/commerce";
+export * from "@/lib/validators/leads";
+export * from "@/lib/validators/messaging";
 export * from "@/lib/validators/operations";
+export * from "@/lib/validators/push";
 export * from "@/lib/validators/reports";
+export * from "@/lib/validators/reviews";
+export * from "@/lib/validators/settings";
 export * from "@/lib/validators/store";
 export * from "@/lib/validators/training";
 
